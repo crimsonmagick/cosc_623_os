@@ -1,50 +1,73 @@
-; OS623 Master Boot Record Sector version 0.1
+; WelbOS Master Boot Record Sector version 0.0.1
 ; First version, boot into real mode
 ; A very minimal MBR
-; Show OS423 info only, no other functions
 ; Copy to Secor 0 (C0:H0:S1)
 ; Assemble with:
-; nasm -f bin -o os623V01.bin os623V01.asm
-; 1/4/2025
+;   nasm -f bin -o os623V01.bin os623V01.asm
+; 1/15/2025
 
-	bits 16
-	org 0x7c00
-	jmp short start
-	nop
-bsOEM	db "OS623 v.0.1"               ; OEM String
+bits 16
+BIOS_VIDEO equ 0x10
+
+org 0x7c00
+jmp short start
+nop
+
+bsOEM       db "WelbOS 0.0.1"         ; OEM String
 
 start:
-	
-;;cls
-	mov ah,06h		;Function 06h (scroll screen)
-	mov al,0		;Scroll all lines
-	mov bh,0ah		;Attribute (lightgreen on black) 
-	mov ch,0		;Upper left row is zero
-	mov cl,0		;Upper left column is zero
-	mov dh,24		;Lower left row is 24
-	mov dl,79		;Lower left column is 79
-	int 10h			;BIOS Interrupt 10h (video services)
-				;Colors from 0: Black Blue Green Cyan Red Magenta Brown White
-				;Colors from 8: Gray LBlue LGreen LCyan LRed LMagenta Yellow BWhite
+    call clear_screen
+    push mlen
+    push msg
+    call print_message
 
-;;printHello
-	mov ah,13h		;Function 13h (display string), XT machine only
-	mov al,1		;Write mode is zero: cursor stay after last char
-	mov bh,0		;Use video page of zero
-	mov bl,0ah		;Attribute (lightgreen on black)
-	mov cx,mlen		;Character string length
-	mov dh,0		;Position on row 0
-	mov dl,0		;And column 0
-	lea bp,[msg]	;Load the offset address of string into BP, es:bp
-					;Same as mov bp, msg  
-	int 10h
+end:
+  jmp short end
 
-	int 20h
-	
+clear_screen:
+    mov ah, 06h             ; BIOS scroll (function 06h)
+    mov al, 0               ; Scroll all lines
+    mov bh, 0Ah             ; Attribute (lightgreen on black)
+    mov ch, 0               ; Upper-left row
+    mov cl, 0               ; Upper-left column
+    mov dh, 24              ; Lower-right row
+    mov dl, 79              ; Lower-right column
+    int BIOS_VIDEO          ; BIOS video interrupt
+    ret
 
-msg db `The discontinuation of Taco Bell Lava Sauce is the greaatest travesty known to humankind\n\r$`
-mlen equ $-msg
+print_message:
 
-padding	times 510-($-$$) db 0		;to make MBR 512 bytes
-bootSig	db 0x55, 0xaa		;signature (optional)
+    push bp ; save bp for the return
+    mov  bp, sp ; update bp to create a new "stack frame"
 
+    mov  si, [bp+4]         ; SI = address of the string
+    mov  cx, [bp+6]         ; CX = length of the string
+
+    ; We need ES:BP (or ES:SI). Let's load DS into ES and then move SI -> BP
+    push ds
+    pop  es
+
+    ; Set up for BIOS Int 10h, function 13h
+    mov  ah, 13h            ; Function 13h (display string)
+    mov  al, 1              ; Write mode = 1 (cursor stays after last char)
+    mov  bh, 0              ; Video page
+    mov  bl, 0Ah            ; Attribute (lightgreen on black)
+    mov  dh, 0              ; Row
+    mov  dl, 0              ; Column
+
+    mov  bp, si             ; Put offset in BP (ES:BP points to the string)
+    int  BIOS_VIDEO
+
+    pop  bp                 ; Restore stack frame
+    ret
+
+; Constants/data:
+
+msg db `WELBOS\n\r`
+mlen    equ ($ - msg)
+
+; Pad to 512 bytes for an MBR:
+padding times 510 - ($ - $$) db 0
+
+; Optional boot signature:
+bootSig db 0x55, 0xAA
