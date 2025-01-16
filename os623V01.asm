@@ -8,6 +8,7 @@
 
 bits 16
 BIOS_VIDEO equ 0x10
+DISPLAY_FUN equ 0x13
 
 org 0x7c00
 jmp short start
@@ -17,9 +18,18 @@ bsOEM       db "WelbOS 0.0.1"         ; OEM String
 
 start:
     call clear_screen
-    push mlen
-    push msg
+
+    ;push linelen
+    ;push line
+    ;call print_message
+
+    push welboslen
+    push welbos
     call print_message
+
+    ;push linelen
+    ;push line
+    ;call print_message
 
 end:
   jmp short end
@@ -40,21 +50,20 @@ print_message:
     push bp ; save bp for the return
     mov  bp, sp ; update bp to create a new "stack frame"
 
-    mov  si, [bp+4]         ; SI = address of the string
-    mov  cx, [bp+6]         ; CX = length of the string
+    mov si, [bp+4]         ; SI = address of the string
+    mov cx, [bp+6]         ; CX = length of the string
 
-    ; We need ES:BP (or ES:SI). Let's load DS into ES and then move SI -> BP
+    ; We need ES:BP provides the pointer to the string - load the data segment (DS) base into ES
     push ds
-    pop  es
+    pop es
 
     ; Set up for BIOS Int 10h, function 13h
-    mov  ah, 13h            ; Function 13h (display string)
-    mov  al, 1              ; Write mode = 1 (cursor stays after last char)
+    mov  ah, DISPLAY_FUN    ; Function 13h (display string)
+    mov  al, 0              ; Write mode = 1 (cursor stays after last char
     mov  bh, 0              ; Video page
     mov  bl, 0Ah            ; Attribute (lightgreen on black)
-    mov  dh, 0              ; Row
-    mov  dl, 0              ; Column
-
+    mov  dh, 13             ; Row
+    mov  dl, 35             ; Column
     mov  bp, si             ; Put offset in BP (ES:BP points to the string)
     int  BIOS_VIDEO
 
@@ -62,9 +71,10 @@ print_message:
     ret
 
 ; Constants/data:
-
-msg db `WELBOS\n\r`
-mlen    equ ($ - msg)
+line      db `============\r\n`
+linelen   equ ($ - line)
+welbos    db `|| WELBOS ||\r\n`
+welboslen equ ($ - welbos)
 
 ; Pad to 512 bytes for an MBR:
 padding times 510 - ($ - $$) db 0
