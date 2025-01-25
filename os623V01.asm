@@ -17,6 +17,10 @@ nop
 bsOEM       db "WelbOS 0.0.1"         ; OEM String
 
 start:
+
+    push 0x00           ; disable
+    call set_cursor
+
     call clear_screen
 
     push toplinelen
@@ -45,6 +49,22 @@ start:
 
 end:
   jmp short end
+
+set_cursor:
+                        ; avoiding using a stack frame just to see if I can
+    pop bx              ; caller address
+    pop ax              ; boolean - enable/disable (non zero is high)
+    push bx             ; restore bx to the stack for the final return
+    test ah, ah
+    jz disable_curs
+    mov ch, 0x00
+    jmp curs_cont
+disable_curs:
+    mov ch, 0x20
+curs_cont:
+    mov ah, 0x01
+    int 0x10
+    ret
 
 clear_screen:
     mov ah, 0x06            ; BIOS scroll (function 06h)
