@@ -7,6 +7,7 @@ MESSAGE_ROW     equ DISPLAY_HEIGHT / 2
 LINE_ROW_TOP    equ MESSAGE_ROW - 1
 LINE_ROW_VERS   equ MESSAGE_ROW + 1
 LINE_ROW_BOTTOM equ MESSAGE_ROW + 2
+COLOR_1         equ 0x4E
 %define CENTER(len) ((DISPLAY_WIDTH - len) / 2)
 
 org 0x7c00
@@ -18,10 +19,10 @@ bsOEM       db "WelbOS 0.0.1"         ; OEM String
 start:
     call clear_screen
 
-    push linelen
-    push line
+    push toplinelen
+    push topline
     push LINE_ROW_TOP
-    push CENTER(linelen)
+    push CENTER(toplinelen)
     call print_line
 
     push welboslen
@@ -36,19 +37,19 @@ start:
     push CENTER(versionlen)
     call print_line
 
-    push linelen
-    push line
+    push bottomlinelen
+    push bottomline
     push LINE_ROW_BOTTOM
-    push CENTER(linelen)
+    push CENTER(bottomlinelen)
     call print_line
 
 end:
   jmp short end
 
 clear_screen:
-    mov ah, 06h             ; BIOS scroll (function 06h)
+    mov ah, 0x06            ; BIOS scroll (function 06h)
     mov al, 0               ; Scroll all lines
-    mov bh, 0Ah             ; Attribute (lightgreen on black)
+    mov bh, COLOR_1         ; Attribute
     mov ch, 0               ; Upper-left row
     mov cl, 0               ; Upper-left column
     mov dh, 24              ; Lower-right row
@@ -61,11 +62,11 @@ print_line:
     push bp ; save bp for the return
     mov  bp, sp ; update bp to create a new "stack frame"
 
-    mov si, [bp+8]         ; SI = address of the string
-    mov cx, [bp+10]         ; CX = length of the string
-    mov dh, [bp+6]
-    mov dl, [bp+4]
-    mov bl, 0Ah            ; Attribute (lightgreen on black)
+    mov cx, [bp+10]        ; length of the string
+    mov si, [bp+8]         ; address of the string
+    mov dh, [bp+6]         ; row position
+    mov dl, [bp+4]         ; column position
+    mov bl, COLOR_1        ; Attribute (lightgreen on black)
 
     ; We need ES:BP provides the pointer to the string - load the data segment (DS) base into ES
     push ds
@@ -79,15 +80,21 @@ print_line:
     int  BIOS_VIDEO
 
     pop  bp                 ; Restore stack frame
-    ret
+    ret 8
 
 ; data:
-line        db `===================\r\n`
-linelen     equ ($ - line)
-welbos      db `||     WelbOS    ||\r\n`
-welboslen   equ ($ - welbos)
-version     db `|| Version 0.0.1 ||\r\n`
-versionlen  equ ($ - version)
+topline             db 0xC9
+                    times 17 db 0xCD
+                    db 0xBB
+toplinelen          equ ($ - topline)
+bottomline          db 0xC8
+                    times 17 db 0xCD
+                    db 0xBC
+bottomlinelen       equ ($ - bottomline)
+welbos              db 0xBA, `      WelbOS     `, 0xBA
+welboslen           equ ($ - welbos)
+version             db 0xBA, `  Version 0.0.1  `, 0xBA
+versionlen          equ ($ - version)
 
 ; Pad to 512 bytes for an MBR:
 padding times 510 - ($ - $$) db 0
