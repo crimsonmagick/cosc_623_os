@@ -1,14 +1,13 @@
-; WelbOS Master Boot Record Sector version 0.0.1
-; First version, boot into real mode
-; A very minimal MBR
-; Copy to Secor 0 (C0:H0:S1)
-; Assemble with:
-;   nasm -f bin -o os623V01.bin os623V01.asm
-; 1/15/2025
-
 bits 16
-BIOS_VIDEO equ 0x10
-DISPLAY_FUN equ 0x13
+BIOS_VIDEO      equ 0x10
+DISPLAY_FUN     equ 0x13
+DISPLAY_WIDTH   equ 80
+DISPLAY_HEIGHT  equ 25
+MESSAGE_ROW     equ DISPLAY_HEIGHT / 2
+LINE_ROW_TOP    equ MESSAGE_ROW - 1
+LINE_ROW_VERS   equ MESSAGE_ROW + 1
+LINE_ROW_BOTTOM equ MESSAGE_ROW + 2
+%define CENTER(len) ((DISPLAY_WIDTH - len) / 2)
 
 org 0x7c00
 jmp short start
@@ -19,17 +18,29 @@ bsOEM       db "WelbOS 0.0.1"         ; OEM String
 start:
     call clear_screen
 
-    ;push linelen
-    ;push line
-    ;call print_message
+    push linelen
+    push line
+    push LINE_ROW_TOP
+    push CENTER(linelen)
+    call print_line
 
     push welboslen
     push welbos
-    call print_message
+    push MESSAGE_ROW
+    push CENTER(welboslen)
+    call print_line
 
-    ;push linelen
-    ;push line
-    ;call print_message
+    push versionlen
+    push version
+    push LINE_ROW_VERS
+    push CENTER(versionlen)
+    call print_line
+
+    push linelen
+    push line
+    push LINE_ROW_BOTTOM
+    push CENTER(linelen)
+    call print_line
 
 end:
   jmp short end
@@ -45,13 +56,16 @@ clear_screen:
     int BIOS_VIDEO          ; BIOS video interrupt
     ret
 
-print_message:
+print_line:
 
     push bp ; save bp for the return
     mov  bp, sp ; update bp to create a new "stack frame"
 
-    mov si, [bp+4]         ; SI = address of the string
-    mov cx, [bp+6]         ; CX = length of the string
+    mov si, [bp+8]         ; SI = address of the string
+    mov cx, [bp+10]         ; CX = length of the string
+    mov dh, [bp+6]
+    mov dl, [bp+4]
+    mov bl, 0Ah            ; Attribute (lightgreen on black)
 
     ; We need ES:BP provides the pointer to the string - load the data segment (DS) base into ES
     push ds
@@ -61,20 +75,19 @@ print_message:
     mov  ah, DISPLAY_FUN    ; Function 13h (display string)
     mov  al, 0              ; Write mode = 1 (cursor stays after last char
     mov  bh, 0              ; Video page
-    mov  bl, 0Ah            ; Attribute (lightgreen on black)
-    mov  dh, 13             ; Row
-    mov  dl, 35             ; Column
     mov  bp, si             ; Put offset in BP (ES:BP points to the string)
     int  BIOS_VIDEO
 
     pop  bp                 ; Restore stack frame
     ret
 
-; Constants/data:
-line      db `============\r\n`
-linelen   equ ($ - line)
-welbos    db `|| WELBOS ||\r\n`
-welboslen equ ($ - welbos)
+; data:
+line        db `===================\r\n`
+linelen     equ ($ - line)
+welbos      db `||     WelbOS    ||\r\n`
+welboslen   equ ($ - welbos)
+version     db `|| Version 0.0.1 ||\r\n`
+versionlen  equ ($ - version)
 
 ; Pad to 512 bytes for an MBR:
 padding times 510 - ($ - $$) db 0
