@@ -18,11 +18,14 @@ bsOEM       db "WelbOS 0.0.1"         ; OEM String
 
 start:
 
-    push 0x00           ; disable
+    push 0x00           ; disable cursor
     call set_cursor
-
     call clear_screen
+    call print_message
+end:
+    jmp short end
 
+print_message:
     push toplinelen
     push topline
     push LINE_ROW_TOP
@@ -46,9 +49,6 @@ start:
     push LINE_ROW_BOTTOM
     push CENTER(bottomlinelen)
     call print_line
-
-end:
-  jmp short end
 
 set_cursor:
                         ; avoiding using a stack frame just to see if I can
