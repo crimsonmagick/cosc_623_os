@@ -21,34 +21,34 @@ start:
     push 0x00           ; disable cursor
     call set_cursor
     call clear_screen
-    call print_message
+    call show_splash
 end:
     jmp short end
 
-print_message:
+show_splash:
     push toplinelen
     push topline
     push LINE_ROW_TOP
     push CENTER(toplinelen)
-    call print_line
+    call print
 
     push welboslen
     push welbos
     push MESSAGE_ROW
     push CENTER(welboslen)
-    call print_line
+    call print
 
     push versionlen
     push version
     push LINE_ROW_VERS
     push CENTER(versionlen)
-    call print_line
+    call print
 
     push bottomlinelen
     push bottomline
     push LINE_ROW_BOTTOM
     push CENTER(bottomlinelen)
-    call print_line
+    call print
 
 set_cursor:
                         ; avoiding using a stack frame just to see if I can
@@ -77,7 +77,7 @@ clear_screen:
     int BIOS_VIDEO          ; BIOS video interrupt
     ret
 
-print_line:
+print:
 
     push bp ; save bp for the return
     mov  bp, sp ; update bp to create a new "stack frame"
