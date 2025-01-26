@@ -26,24 +26,53 @@ end:
     jmp short end
 
 show_splash:
-    push toplinelen
+draw_top:
+
+    ;left edge
+    push 1
     push topline
     push LINE_ROW_TOP
-    push CENTER(toplinelen)
+    push CENTER(welboslen)
     call print
 
+    ; middle
+    mov ah, welboslen - 1
+    mov al, 1            ; break when == to ah
+draw_top_middle:
+    cmp al, ah
+    je draw_top_right
+    push ax ; can't push 8 bit registers individually
+
+    push 1
+    push topline + 1
+    push LINE_ROW_TOP
+    add al, CENTER(welboslen)  ; we're looping through the length of the bar
+    mov ah, 0
+    push ax
+    call print
+
+    pop ax
+    inc al
+    jmp draw_top_middle
+
+draw_top_right:
+    ; TODO
+
+    ; os name
     push welboslen
     push welbos
     push MESSAGE_ROW
     push CENTER(welboslen)
     call print
 
+    ; version
     push versionlen
     push version
     push LINE_ROW_VERS
     push CENTER(versionlen)
     call print
 
+    ; bottom line
     push bottomlinelen
     push bottomline
     push LINE_ROW_BOTTOM
@@ -104,7 +133,7 @@ print:
 
 ; data:
 topline             db 0xC9
-                    times 17 db 0xCD
+                    db 0xCD
                     db 0xBB
 toplinelen          equ ($ - topline)
 bottomline          db 0xC8
