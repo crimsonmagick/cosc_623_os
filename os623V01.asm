@@ -1,13 +1,15 @@
 bits 16
-BIOS_VIDEO      equ 0x10
-DISPLAY_FUN     equ 0x13
-DISPLAY_WIDTH   equ 80
-DISPLAY_HEIGHT  equ 25
-MESSAGE_ROW     equ DISPLAY_HEIGHT / 2
-LINE_ROW_TOP    equ MESSAGE_ROW - 1
-LINE_ROW_VERS   equ MESSAGE_ROW + 1
-LINE_ROW_BOTTOM equ MESSAGE_ROW + 2
-COLOR_1         equ 0x4E
+BIOS_VIDEO          equ 0x10
+DISPLAY_FUN         equ 0x13
+DISPLAY_WIDTH       equ 80
+DISPLAY_HEIGHT      equ 25
+MESSAGE_ROW         equ DISPLAY_HEIGHT / 2 - 3
+LINE_ROW_TOP        equ MESSAGE_ROW - 1
+LINE_ROW_VERS       equ MESSAGE_ROW + 1
+LINE_ROW_NAME       equ LINE_ROW_VERS + 1
+LINE_ROW_BOTTOM     equ LINE_ROW_NAME + 1
+LINE_ROW_ANYKEY     equ LINE_ROW_BOTTOM + 2
+COLOR_1             equ 0x4E
 %define CENTER(len) ((DISPLAY_WIDTH - len) / 2)
 
 org 0x7c00
@@ -25,43 +27,15 @@ end:
     jmp short end
 
 show_splash:
-draw_top:
+    push bp
+    mov bp, sp
 
-    ;left edge
-    push 1
-    push topline
-    push LINE_ROW_TOP
-    push CENTER(welboslen)
-    call print
-
-    ; middle
-    mov ah, welboslen - 1
-    mov al, 1            ; break when == to ah
-draw_top_middle:
-    cmp al, ah
-    je draw_top_right
-    push ax ; can't push 8 bit registers individually
-
-    push 1
-    push topline + 1
-    push LINE_ROW_TOP
-    add al, CENTER(welboslen)  ; we're looping through the length of the bar
-    mov ah, 0
-    push ax
-    call print
-
-    pop ax
-    inc al
-    jmp draw_top_middle
-
-draw_top_right:
-    push 1
-    push topline + 2
-    push LINE_ROW_TOP
-    add al, CENTER(welboslen)  ; top-right position
-    mov ah, 0
-    push ax
-    call print
+    ; top line
+    push welboslen - 1       ; Repeat count
+    push CENTER(welboslen)   ; Column
+    push LINE_ROW_TOP        ; Row
+    push topline             ; Address of 3-tuple
+    call draw_line
 
     ; os name
     push welboslen
@@ -77,12 +51,29 @@ draw_top_right:
     push CENTER(versionlen)
     call print
 
-    ; bottom line
-    push bottomlinelen
-    push bottomline
-    push LINE_ROW_BOTTOM
-    push CENTER(bottomlinelen)
+    ; name
+    push namelen
+    push name
+    push LINE_ROW_NAME
+    push CENTER(namelen)
     call print
+
+    ; bottom line
+    push welboslen - 1       ; Repeat count
+    push CENTER(welboslen)   ; Column
+    push LINE_ROW_BOTTOM     ; Row
+    push bottomline          ; Address of 3-tuple
+    call draw_line
+
+    ; anykey
+    push anykeylen
+    push anykey
+    push LINE_ROW_ANYKEY
+    push CENTER(anykeylen)
+    call print
+
+    pop bp
+    ret
 
 ; -----------------------------------------------------------------------------
 ; Function: draw_line
@@ -102,7 +93,7 @@ draw_top_right:
 ; -----------------------------------------------------------------------------
 draw_line:
     push bp
-    mov sp, bp
+    mov bp, sp
 
     ;left edge
     push 1
@@ -114,14 +105,13 @@ draw_line:
     push si
     call print
 
-    ; middle
-    mov ah, [bp + 10]
-    dec ah
-    mov al, 1            ; break when == to ah
+    ; set up middle loop
+    mov ax, 1                           ; break when == to cx
 draw_line_middle:
-    cmp al, ah
+    mov cx, [bp + 10]
+    cmp ax, cx
     je draw_line_right
-    push ax ; can't push 8 bit registers individually
+    push ax
 
     push 1
     mov si, [bp + 4]
@@ -130,13 +120,12 @@ draw_line_middle:
     mov si, [bp + 6]
     push si
     mov si, [bp + 8]
+    add si, ax
     push si
-    mov ah, 0
-    push ax
     call print
 
     pop ax
-    inc al
+    inc ax
     jmp draw_line_middle
 
 draw_line_right:
@@ -146,12 +135,12 @@ draw_line_right:
     push si
     mov si, [bp + 6]
     push si
-    add al, [bp + 8]  ; top-right position
-    mov ah, 0
+    add ax, [bp + 8]                    ; rightmostposition
     push ax
     call print
 
     pop bp
+    ret 8
 
 ; -----------------------------------------------------------------------------
 ; Function: set_cursor
@@ -170,7 +159,7 @@ set_cursor:
     pop bx              ; caller address
     pop ax              ; boolean - enable/disable (non zero is high)
     push bx             ; restore bx to the stack for the final return
-    test ah, ah
+    test al, al
     jz disable_curs
     mov ch, 0x00
     jmp curs_cont
@@ -179,7 +168,7 @@ disable_curs:
 curs_cont:
     mov ah, 0x01
     int BIOS_VIDEO
-    ret
+    ret 2
 
 ; -----------------------------------------------------------------------------
 ; Function: clear_screen
@@ -243,15 +232,17 @@ print:
 topline             db 0xC9
                     db 0xCD
                     db 0xBB
-toplinelen          equ ($ - topline)
 bottomline          db 0xC8
-                    times 17 db 0xCD
+                    db 0xCD
                     db 0xBC
-bottomlinelen       equ ($ - bottomline)
 welbos              db 0xBA, `      WelbOS     `, 0xBA
 welboslen           equ ($ - welbos)
 version             db 0xBA, `  Version 0.0.1  `, 0xBA
 versionlen          equ ($ - version)
+name                db 0xBA, `   Welby Seely   `, 0xBA
+namelen             equ ($ - name)
+anykey              db "Press any key to continue..."
+anykeylen           equ ($ - anykey)
 
 ; Pad to 512 bytes for an MBR:
 padding times 510 - ($ - $$) db 0
