@@ -56,7 +56,13 @@ draw_top_middle:
     jmp draw_top_middle
 
 draw_top_right:
-    ; TODO
+    push 1
+    push topline + 2
+    push LINE_ROW_TOP
+    add al, CENTER(welboslen)  ; top-right position
+    mov ah, 0
+    push ax
+    call print
 
     ; os name
     push welboslen
