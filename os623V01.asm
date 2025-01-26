@@ -17,7 +17,6 @@ nop
 bsOEM       db "WelbOS 0.0.1"         ; OEM String
 
 start:
-
     push 0x00           ; disable cursor
     call set_cursor
     call clear_screen
@@ -85,6 +84,18 @@ draw_top_right:
     push CENTER(bottomlinelen)
     call print
 
+; -----------------------------------------------------------------------------
+; Function: set_cursor
+; Description: Sets cursor visibility
+; Inputs:
+;   - [sp + 4] Enable/disable cursor flag. Enable if param != 0, disable otherwise.
+; Outputs:
+;   - None.
+; Modifies:
+;   - AX, CX
+; Calls:
+;   - BIOS interrupt 0x10, function 0x01.
+; -----------------------------------------------------------------------------
 set_cursor:
                         ; avoiding using a stack frame just to see if I can
     pop bx              ; caller address
@@ -98,9 +109,19 @@ disable_curs:
     mov ch, 0x20
 curs_cont:
     mov ah, 0x01
-    int 0x10
+    int BIOS_VIDEO
     ret
 
+; -----------------------------------------------------------------------------
+; Function: clear_screen
+; Description: Clears and resets the screen.
+; Inputs: None.
+; Outputs: None.
+; Modifies:
+;   - AX, BX, CX, DX
+; Calls:
+;   - BIOS interrupt 0x10, function 0x06.
+; -----------------------------------------------------------------------------
 clear_screen:
     mov ah, 0x06            ; BIOS scroll (function 06h)
     mov al, 0               ; Scroll all lines
@@ -112,8 +133,21 @@ clear_screen:
     int BIOS_VIDEO          ; BIOS video interrupt
     ret
 
+; -----------------------------------------------------------------------------
+; Function: print
+; Description: Prints a string to the console.
+; Inputs:
+;   - [bp+4] Column position to begin writing the string.
+;   - [bp+6] Row position to begin writing the string.
+;   - [bp+8] Memory address location of the string.
+;   - [bp+10] Length of the string.
+; Outputs: None.
+; Modifies:
+;   - AX, BX, CX, DX
+; Calls:
+;   - BIOS interrupt 0x10, function 0x13.
+; -----------------------------------------------------------------------------
 print:
-
     push bp ; save bp for the return
     mov  bp, sp ; update bp to create a new "stack frame"
 
@@ -127,7 +161,6 @@ print:
     push ds
     pop es
 
-    ; Set up for BIOS Int 10h, function 13h
     mov  ah, DISPLAY_FUN    ; Function 13h (display string)
     mov  al, 0              ; Write mode = 1 (cursor stays after last char
     mov  bh, 0              ; Video page
