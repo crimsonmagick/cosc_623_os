@@ -85,6 +85,75 @@ draw_top_right:
     call print
 
 ; -----------------------------------------------------------------------------
+; Function: draw_line
+; Description: Sets cursor visibility
+; Inputs:
+;   - [sp + 4] Address of 3-tuple of chars. First char is the left most char,
+;              second char will be repeated, and the third char is the right most char.
+;   - [sp + 6] The row to print the line on
+;   - [sp + 8] The column to start printing the line on
+;   - [sp + 10] The numer of times to repeat the center character
+; Outputs:
+;   - None.
+; Modifies:
+;   - AX, CX
+; Calls:
+;   - print
+; -----------------------------------------------------------------------------
+draw_line:
+    push bp
+    mov sp, bp
+
+    ;left edge
+    push 1
+    mov si, [bp + 4]
+    push si
+    mov si, [bp + 6]
+    push si
+    mov si, [bp + 8]
+    push si
+    call print
+
+    ; middle
+    mov ah, [bp + 10]
+    dec ah
+    mov al, 1            ; break when == to ah
+draw_line_middle:
+    cmp al, ah
+    je draw_line_right
+    push ax ; can't push 8 bit registers individually
+
+    push 1
+    mov si, [bp + 4]
+    inc si
+    push si
+    mov si, [bp + 6]
+    push si
+    mov si, [bp + 8]
+    push si
+    mov ah, 0
+    push ax
+    call print
+
+    pop ax
+    inc al
+    jmp draw_line_middle
+
+draw_line_right:
+    push 1
+    mov si, [bp + 4]
+    add si, 2
+    push si
+    mov si, [bp + 6]
+    push si
+    add al, [bp + 8]  ; top-right position
+    mov ah, 0
+    push ax
+    call print
+
+    pop bp
+
+; -----------------------------------------------------------------------------
 ; Function: set_cursor
 ; Description: Sets cursor visibility
 ; Inputs:
@@ -137,10 +206,10 @@ clear_screen:
 ; Function: print
 ; Description: Prints a string to the console.
 ; Inputs:
-;   - [bp+4] Column position to begin writing the string.
-;   - [bp+6] Row position to begin writing the string.
-;   - [bp+8] Memory address location of the string.
-;   - [bp+10] Length of the string.
+;   - [sp+4] Column position to begin writing the string.
+;   - [sp+6] Row position to begin writing the string.
+;   - [sp+8] Memory address location of the string.
+;   - [sp+10] Length of the string.
 ; Outputs: None.
 ; Modifies:
 ;   - AX, BX, CX, DX
