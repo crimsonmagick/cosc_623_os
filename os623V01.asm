@@ -5,8 +5,7 @@ DISPLAY_WIDTH       equ 80
 DISPLAY_HEIGHT      equ 25
 MESSAGE_ROW         equ DISPLAY_HEIGHT / 2 - 3
 LINE_ROW_TOP        equ MESSAGE_ROW - 1
-LINE_ROW_VERS       equ MESSAGE_ROW + 1
-LINE_ROW_NAME       equ LINE_ROW_VERS + 1
+LINE_ROW_NAME       equ MESSAGE_ROW + 1
 LINE_ROW_BOTTOM     equ LINE_ROW_NAME + 1
 LINE_ROW_ANYKEY     equ LINE_ROW_BOTTOM + 2
 COLOR_1             equ 0x0F
@@ -16,7 +15,7 @@ org 0x7c00
 jmp short start
 nop
 
-bsOEM       db "WelbOS 0.0.1"         ; OEM String
+bsOEM       db "WelbOS v01"         ; OEM String
 
 start:
     push 0x00           ; disable cursor
@@ -57,13 +56,6 @@ show_splash:
     push welbos
     push MESSAGE_ROW
     push CENTER(welboslen)
-    call print
-
-    ; version
-    push versionlen
-    push version
-    push LINE_ROW_VERS
-    push CENTER(versionlen)
     call print
 
     ; name
@@ -258,10 +250,8 @@ topline             db 0xC9
 bottomline          db 0xC8
                     db 0xCD
                     db 0xBC
-welbos              db 0xBA, `      WelbOS     `, 0xBA
+welbos              db 0xBA, `    WelbOS v01   `, 0xBA
 welboslen           equ ($ - welbos)
-version             db 0xBA, `  Version 0.0.1  `, 0xBA
-versionlen          equ ($ - version)
 name                db 0xBA, `   Welby Seely   `, 0xBA
 namelen             equ ($ - name)
 anykey              db "Press any key to continue..."
