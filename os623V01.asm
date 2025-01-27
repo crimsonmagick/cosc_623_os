@@ -18,16 +18,31 @@ nop
 bsOEM       db "WelbOS v01"         ; OEM String
 
 start:
-    push 0x00           ; disable cursor
+    push 0x00           ; Disable cursor
     call set_cursor_vis
     call clear_screen
-    call show_splash
 
-    ;wait for key press
-    mov ah, 0x00        ; block on key press
+    ; Switch to 320x200/256-color graphics mode
+    mov ax, 0x0013
+    int 0x10
+
+    ; Print character using BIOS teletype
+    mov ah, 0x0E        ; BIOS teletype function
+    mov al, 'A'         ; Character to print
+    mov bh, 0x00        ; Page number
+    mov bl, 0x0F        ; Color (white)
+    int 0x10
+
+    ; Wait for key press
+    mov ah, 0x00
     int 0x16
 
-    push 0x01           ; enable cursor
+    ; Switch back to text mode (80x25)
+    mov ax, 0x0003
+    int 0x10
+
+    ; Restore cursor and clean up
+    push 0x01
     call set_cursor_vis
     call clear_screen
 
