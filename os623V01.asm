@@ -20,9 +20,24 @@ bsOEM       db "WelbOS 0.0.1"         ; OEM String
 
 start:
     push 0x00           ; disable cursor
-    call set_cursor
+    call set_cursor_vis
     call clear_screen
     call show_splash
+
+    ;wait for key press
+    mov ah, 0x00        ; block on key press
+    int 0x16
+
+    push 0x01           ; enable cursor
+    call set_cursor_vis
+    call clear_screen
+
+    push 1
+    push prompt_sym
+    push 0
+    push 0
+    call set_cursor_pos
+    call print
 end:
     jmp short end
 
@@ -73,6 +88,14 @@ show_splash:
     call print
 
     pop bp
+    ret
+
+set_cursor_pos:
+    mov ah, 0x02        ; BIOS function: set cursor position
+    mov bh, 0x00        ; Page number (0)
+    mov dh, 0x00        ; Row (0)
+    mov dl, 0x01        ; Column (1)
+    int BIOS_VIDEO
     ret
 
 ; -----------------------------------------------------------------------------
@@ -143,7 +166,7 @@ draw_line_right:
     ret 8
 
 ; -----------------------------------------------------------------------------
-; Function: set_cursor
+; Function: set_cursor_vis
 ; Description: Sets cursor visibility
 ; Inputs:
 ;   - [sp + 4] Enable/disable cursor flag. Enable if param != 0, disable otherwise.
@@ -154,7 +177,7 @@ draw_line_right:
 ; Calls:
 ;   - BIOS interrupt 0x10, function 0x01.
 ; -----------------------------------------------------------------------------
-set_cursor:
+set_cursor_vis:
                         ; avoiding using a stack frame just to see if I can
     pop bx              ; caller address
     pop ax              ; boolean - enable/disable (non zero is high)
@@ -219,7 +242,7 @@ print:
     push ds
     pop es
 
-    mov  ah, DISPLAY_FUN    ; Function 13h (display string)
+    mov  ah, DISPLAY_FUN    ; BIOS display string (function 13h)
     mov  al, 0              ; Write mode = 1 (cursor stays after last char
     mov  bh, 0              ; Video page
     mov  bp, si             ; Put offset in BP (ES:BP points to the string)
@@ -243,6 +266,8 @@ name                db 0xBA, `   Welby Seely   `, 0xBA
 namelen             equ ($ - name)
 anykey              db "Press any key to continue..."
 anykeylen           equ ($ - anykey)
+prompt_sym          db "$"
+
 
 ; Pad to 512 bytes for an MBR:
 padding times 510 - ($ - $$) db 0
