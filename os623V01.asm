@@ -29,24 +29,37 @@ start:
     mov ax, 0xA000
     mov es, ax
 
-    ; Draw 'A' at (100,100)
+    ; Draw 'W' at (100,100)
     mov di, 100*320 + 100  ; Y*320 + X
-    mov si, a_bitmap       ; Font data pointer
+    mov si, w_bitmap       ; Font data pointer
 
-    mov cx, 8              ; 8 rows
+mov cx, 9              ; 9 rows
 .draw_rows:
-    lodsb                  ; Get row bitmap
-    mov dx, cx             ; Save row counter
-    mov cx, 8              ; 8 columns
-.draw_cols:
-    shl al, 1              ; Shift left (test MSB)
-    jnc .skip
-    mov [es:di], byte 0x0F ; White pixel
-.skip:
-    inc di                 ; Next column
-    loop .draw_cols
-    add di, 320-8          ; Next row (320 bytes/row - 8 cols)
-    mov cx, dx             ; Restore row counter
+    lodsw              ; Load 16-bit row into AX (AL=left byte, AH=right byte)
+    mov dx, cx         ; Save row counter
+
+    ; Process left 8 pixels (AL)
+    mov cx, 8
+.draw_left_cols:
+    shl al, 1          ; Shift left (test MSB of AL)
+    jnc .skip_left
+    mov [es:di], byte 0x0F ; Draw white pixel
+.skip_left:
+    inc di             ; Next column
+    loop .draw_left_cols
+
+    ; Process right 8 pixels (AH)
+    mov cx, 8
+.draw_right_cols:
+    shl ah, 1          ; Shift left (test MSB of AH)
+    jnc .skip_right
+    mov [es:di], byte 0x0F ; Draw white pixel
+.skip_right:
+    inc di             ; Next column
+    loop .draw_right_cols
+
+    add di, 320 - 16   ; Move to next row (320 bytes/row - 16 cols)
+    mov cx, dx         ; Restore row counter
     loop .draw_rows
 
     ; Wait for key press
@@ -289,6 +302,16 @@ anykey              db "Press any key to continue..."
 anykeylen           equ ($ - anykey)
 prompt_sym          db "$"
 a_bitmap db 0x18, 0x3C, 0x66, 0x66, 0x7E, 0x66, 0x66, 0x00
+;w_bitmap db 0x41, 0x41, 0x22, 0x2A, 0x14
+w_bitmap db 80h, 02h
+         db 80h, 02h
+         db 40h, 04h
+         db 40h, 04h
+         db 21h, 08h
+         db 22h, 88h
+         db 14h, 50h
+         db 14h, 50h
+         db 08h, 20h
 
 
 ; Pad to 512 bytes for an MBR:
