@@ -9,7 +9,7 @@ LINE_ROW_VERS       equ MESSAGE_ROW + 1
 LINE_ROW_NAME       equ LINE_ROW_VERS + 1
 LINE_ROW_BOTTOM     equ LINE_ROW_NAME + 1
 LINE_ROW_ANYKEY     equ LINE_ROW_BOTTOM + 2
-COLOR_1             equ 0x4E
+COLOR_1             equ 0x0F
 %define CENTER(len) ((DISPLAY_WIDTH - len) / 2)
 
 org 0x7c00
