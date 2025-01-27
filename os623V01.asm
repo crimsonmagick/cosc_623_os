@@ -26,12 +26,28 @@ start:
     mov ax, 0x0013
     int 0x10
 
-    ; Print character using BIOS teletype
-    mov ah, 0x0E        ; BIOS teletype function
-    mov al, 'A'         ; Character to print
-    mov bh, 0x00        ; Page number
-    mov bl, 0x0F        ; Color (white)
-    int 0x10
+    mov ax, 0xA000
+    mov es, ax
+
+    ; Draw 'A' at (100,100)
+    mov di, 100*320 + 100  ; Y*320 + X
+    mov si, a_bitmap       ; Font data pointer
+
+    mov cx, 8              ; 8 rows
+.draw_rows:
+    lodsb                  ; Get row bitmap
+    mov dx, cx             ; Save row counter
+    mov cx, 8              ; 8 columns
+.draw_cols:
+    shl al, 1              ; Shift left (test MSB)
+    jnc .skip
+    mov [es:di], byte 0x0F ; White pixel
+.skip:
+    inc di                 ; Next column
+    loop .draw_cols
+    add di, 320-8          ; Next row (320 bytes/row - 8 cols)
+    mov cx, dx             ; Restore row counter
+    loop .draw_rows
 
     ; Wait for key press
     mov ah, 0x00
@@ -272,6 +288,7 @@ namelen             equ ($ - name)
 anykey              db "Press any key to continue..."
 anykeylen           equ ($ - anykey)
 prompt_sym          db "$"
+a_bitmap db 0x18, 0x3C, 0x66, 0x66, 0x7E, 0x66, 0x66, 0x00
 
 
 ; Pad to 512 bytes for an MBR:
