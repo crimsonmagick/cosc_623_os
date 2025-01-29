@@ -40,7 +40,31 @@ start:
     int BIOS_VIDEO
 
     call set_red_gradient_palette
+    call draw_logo
 
+    ; Wait for key press
+    mov ah, 0x00
+    int 0x16
+
+    ; Switch back to text mode (80x25)
+    mov ax, 0x0003
+    int BIOS_VIDEO
+
+    ; Restore cursor and clean up
+    push 0x01
+    call set_cursor_vis
+    call clear_screen
+
+    push 1
+    push prompt_sym
+    push 0
+    push 0
+    call set_cursor_pos
+    call print
+end:
+    jmp short end
+
+draw_logo:
     mov ax, 0xA000     ; memory mapped I/O segment for VGA
     mov es, ax
 
@@ -102,33 +126,14 @@ scale_vertically:
     push cx
     jmp draw_rows
 next_source_row:
-    push SCALING_FACTOR
     add si, 2
-    ;loop draw_rows
     dec dx
-    jnz draw_rows
+    jz logo_done
+    push SCALING_FACTOR
+    jmp draw_rows
+logo_done:
+    ret
 
-    ; Wait for key press
-    mov ah, 0x00
-    int 0x16
-
-    ; Switch back to text mode (80x25)
-    mov ax, 0x0003
-    int BIOS_VIDEO
-
-    ; Restore cursor and clean up
-    push 0x01
-    call set_cursor_vis
-    call clear_screen
-
-    push 1
-    push prompt_sym
-    push 0
-    push 0
-    call set_cursor_pos
-    call print
-end:
-    jmp short end
 
 set_cursor_pos:
     mov ah, 0x02        ; BIOS function: set cursor position
