@@ -1,6 +1,10 @@
 bits 16
 BIOS_VIDEO          equ 0x10
 DISPLAY_FUN         equ 0x13
+
+FUN_VIDEO_MODE      equ 0x0000
+VGA_MODE            equ 0x0013
+
 DISPLAY_WIDTH       equ 80
 DISPLAY_HEIGHT      equ 25
 MESSAGE_ROW         equ DISPLAY_HEIGHT / 2 - 3
@@ -8,7 +12,12 @@ LINE_ROW_TOP        equ MESSAGE_ROW - 1
 LINE_ROW_NAME       equ MESSAGE_ROW + 1
 LINE_ROW_BOTTOM     equ LINE_ROW_NAME + 1
 LINE_ROW_ANYKEY     equ LINE_ROW_BOTTOM + 2
+TEXT_MODE           equ 0x03
 COLOR_1             equ 0x0F
+LOGO_START_X        equ 0x0
+LOGO_START_Y        equ 0x0
+
+
 %define CENTER(len) ((DISPLAY_WIDTH - len) / 2)
 
 org 0x7c00
@@ -23,14 +32,14 @@ start:
     call clear_screen
 
     ; Switch to 320x200/256-color graphics mode
-    mov ax, 0x0013
-    int 0x10
+    mov ax, FUN_VIDEO_MODE + VGA_MODE
+    int BIOS_VIDEO
 
     mov ax, 0xA000
     mov es, ax
 
     ; Draw 'W' at (100,100)
-    mov di, 100*320 + 100  ; Y*320 + X
+    mov di, LOGO_START_Y*320 + LOGO_START_X
     mov si, w_bitmap       ; Font data pointer
 
 mov cx, 9              ; 9 rows
@@ -68,7 +77,7 @@ mov cx, 9              ; 9 rows
 
     ; Switch back to text mode (80x25)
     mov ax, 0x0003
-    int 0x10
+    int BIOS_VIDEO
 
     ; Restore cursor and clean up
     push 0x01
@@ -301,8 +310,6 @@ namelen             equ ($ - name)
 anykey              db "Press any key to continue..."
 anykeylen           equ ($ - anykey)
 prompt_sym          db "$"
-a_bitmap db 0x18, 0x3C, 0x66, 0x66, 0x7E, 0x66, 0x66, 0x00
-;w_bitmap db 0x41, 0x41, 0x22, 0x2A, 0x14
 w_bitmap db 80h, 02h
          db 80h, 02h
          db 40h, 04h
