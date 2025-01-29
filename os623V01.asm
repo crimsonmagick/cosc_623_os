@@ -5,6 +5,7 @@ DISPLAY_FUN         equ 0x13
 FUN_VIDEO_MODE      equ 0x0000
 VGA_MODE            equ 0x0013
 
+VGA_DISPLAY_WIDTH   equ 320
 DISPLAY_WIDTH       equ 80
 DISPLAY_HEIGHT      equ 25
 MESSAGE_ROW         equ DISPLAY_HEIGHT / 2 - 3
@@ -17,6 +18,9 @@ COLOR_1             equ 0x0F
 LOGO_START_X        equ 0x0
 LOGO_START_Y        equ 0x0
 
+SCALING_FACTOR      equ 0x8
+FALSE               equ 0x00
+
 
 %define CENTER(len) ((DISPLAY_WIDTH - len) / 2)
 
@@ -27,20 +31,19 @@ nop
 bsOEM       db "WelbOS v01"         ; OEM String
 
 start:
-    push 0x00           ; Disable cursor
+    push FALSE
     call set_cursor_vis
+
     call clear_screen
 
-    ; Switch to 320x200/256-color graphics mode
     mov ax, FUN_VIDEO_MODE + VGA_MODE
     int BIOS_VIDEO
 
-    mov ax, 0xA000
+    mov ax, 0xA000     ; memory mapped I/O segment for VGA
     mov es, ax
 
-    ; Draw 'W' at (100,100)
-    mov di, LOGO_START_Y*320 + LOGO_START_X
-    mov si, w_bitmap       ; Font data pointer
+    mov di, LOGO_START_Y * VGA_DISPLAY_WIDTH + LOGO_START_X
+    mov si, w_bitmap   ; source bitmap start address
 
 mov cx, 9              ; 9 rows
 .draw_rows:
@@ -52,9 +55,18 @@ mov cx, 9              ; 9 rows
 .draw_left_cols:
     shl al, 1          ; Shift left (test MSB of AL)
     jnc .skip_left
-    mov [es:di], byte 0x0F ; Draw white pixel
+
+    push cx
+    push ax
+    mov cx, SCALING_FACTOR
+    mov al, 0x0F
+    rep stosb
+    pop ax
+    pop cx
+    jmp .next_left
 .skip_left:
-    inc di             ; Next column
+    add di, SCALING_FACTOR
+.next_left:
     loop .draw_left_cols
 
     ; Process right 8 pixels (AH)
@@ -62,13 +74,19 @@ mov cx, 9              ; 9 rows
 .draw_right_cols:
     shl ah, 1          ; Shift left (test MSB of AH)
     jnc .skip_right
-    mov [es:di], byte 0x0F ; Draw white pixel
+    mov bx, cx
+    mov cx, SCALING_FACTOR
+    mov al, 0x0F
+    rep stosb
+    mov cx, bx
+    jmp .next_right
 .skip_right:
-    inc di             ; Next column
-    loop .draw_right_cols
+     add di, SCALING_FACTOR
+.next_right:
+     loop .draw_right_cols
 
-    add di, 320 - 16   ; Move to next row (320 bytes/row - 16 cols)
-    mov cx, dx         ; Restore row counter
+    add di, 320 - 16 * SCALING_FACTOR ; Move to next row
+    mov cx, dx                        ; Restore row counter
     loop .draw_rows
 
     ; Wait for key press
