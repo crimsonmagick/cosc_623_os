@@ -48,6 +48,10 @@ start:
     mov dx, 9
     push SCALING_FACTOR
 draw_rows:
+    mov bx, 9
+    sub bx, dx          ; if dx=9 => bx=0, dx=8 => bx=1, ...
+    mov bl, [row_colors + bx]  ; store row color in BL (or AL, but we’ll need AL soon)
+
     mov ax, [si]
 
     ; Process left 8 pixels (AL)
@@ -59,7 +63,7 @@ draw_left_cols:
     push cx
     push ax
     mov cx, SCALING_FACTOR
-    mov al, 0x0C
+    mov al, bl
     rep stosb
     pop ax
     pop cx
@@ -77,7 +81,7 @@ draw_right_cols:
     push cx
     push ax
     mov cx, SCALING_FACTOR
-    mov al, 0x0C
+    mov al, bl
     rep stosb
     pop ax
     pop cx
@@ -350,7 +354,8 @@ w_bitmap db 80h, 02h
          db 14h, 50h
          db 14h, 50h
          db 08h, 20h
-
+; Row color table, from top to bottom row
+row_colors db 0x0C, 0x0E, 0x0E, 0x0A, 0x0A, 0x01, 0x01, 0x05, 0x0D
 
 ; Pad to 512 bytes for an MBR:
 padding times 510 - ($ - $$) db 0
