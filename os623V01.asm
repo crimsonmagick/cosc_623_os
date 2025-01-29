@@ -15,8 +15,8 @@ LINE_ROW_BOTTOM     equ LINE_ROW_NAME + 1
 LINE_ROW_ANYKEY     equ LINE_ROW_BOTTOM + 2
 TEXT_MODE           equ 0x03
 COLOR_1             equ 0x0F
-LOGO_START_X        equ 0x0
-LOGO_START_Y        equ 0x0
+LOGO_START_X        equ (VGA_DISPLAY_WIDTH - (16 * SCALING_FACTOR)) / 2
+LOGO_START_Y  equ (200 - (9 * SCALING_FACTOR)) / 2
 
 SCALING_FACTOR      equ 0x8
 FALSE               equ 0x00
@@ -59,7 +59,7 @@ draw_left_cols:
     push cx
     push ax
     mov cx, SCALING_FACTOR
-    mov al, 0x0F
+    mov al, 0x0C
     rep stosb
     pop ax
     pop cx
@@ -77,7 +77,7 @@ draw_right_cols:
     push cx
     push ax
     mov cx, SCALING_FACTOR
-    mov al, 0x0F
+    mov al, 0x0C
     rep stosb
     pop ax
     pop cx
