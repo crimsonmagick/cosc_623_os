@@ -39,6 +39,8 @@ start:
     mov ax, FUN_VIDEO_MODE + VGA_MODE
     int BIOS_VIDEO
 
+    call set_red_gradient_palette
+
     mov ax, 0xA000     ; memory mapped I/O segment for VGA
     mov es, ax
 
@@ -128,48 +130,6 @@ next_source_row:
 end:
     jmp short end
 
-show_splash:
-    push bp
-    mov bp, sp
-
-    ; top line
-    push welboslen - 1       ; Repeat count
-    push CENTER(welboslen)   ; Column
-    push LINE_ROW_TOP        ; Row
-    push topline             ; Address of 3-tuple
-    call draw_line
-
-    ; os name
-    push welboslen
-    push welbos
-    push MESSAGE_ROW
-    push CENTER(welboslen)
-    call print
-
-    ; name
-    push namelen
-    push name
-    push LINE_ROW_NAME
-    push CENTER(namelen)
-    call print
-
-    ; bottom line
-    push welboslen - 1       ; Repeat count
-    push CENTER(welboslen)   ; Column
-    push LINE_ROW_BOTTOM     ; Row
-    push bottomline          ; Address of 3-tuple
-    call draw_line
-
-    ; anykey
-    push anykeylen
-    push anykey
-    push LINE_ROW_ANYKEY
-    push CENTER(anykeylen)
-    call print
-
-    pop bp
-    ret
-
 set_cursor_pos:
     mov ah, 0x02        ; BIOS function: set cursor position
     mov bh, 0x00        ; Page number (0)
@@ -178,72 +138,23 @@ set_cursor_pos:
     int BIOS_VIDEO
     ret
 
-; -----------------------------------------------------------------------------
-; Function: draw_line
-; Description: Sets cursor visibility
-; Inputs:
-;   - [sp + 4] Address of 3-tuple of chars. First char is the left most char,
-;              second char will be repeated, and the third char is the right most char.
-;   - [sp + 6] The row to print the line on
-;   - [sp + 8] The column to start printing the line on
-;   - [sp + 10] The numer of times to repeat the center character
-; Outputs:
-;   - None.
-; Modifies:
-;   - AX, CX
-; Calls:
-;   - print
-; -----------------------------------------------------------------------------
-draw_line:
-    push bp
-    mov bp, sp
+set_red_gradient_palette:
+    mov dx, 0x3C8   ; VGA color index port
+    mov al, 32      ; Start setting colors from index 32
+    out dx, al
+    inc dx          ; Now dx = 0x3C9 (RGB color data port)
 
-    ;left edge
-    push 1
-    mov si, [bp + 4]
-    push si
-    mov si, [bp + 6]
-    push si
-    mov si, [bp + 8]
-    push si
-    call print
-
-    ; set up middle loop
-    mov ax, 1                           ; break when == to cx
-draw_line_middle:
-    mov cx, [bp + 10]
-    cmp ax, cx
-    je draw_line_right
-    push ax
-
-    push 1
-    mov si, [bp + 4]
+    mov cx, 9       ; 9 shades for 9 rows
+    mov si, red_shades
+next_color:
+    mov al, [si]    ; Load Red intensity
+    out dx, al      ; Set Red value
+    xor al, al      ; Set Green=0
+    out dx, al
+    out dx, al      ; Set Blue=0
     inc si
-    push si
-    mov si, [bp + 6]
-    push si
-    mov si, [bp + 8]
-    add si, ax
-    push si
-    call print
-
-    pop ax
-    inc ax
-    jmp draw_line_middle
-
-draw_line_right:
-    push 1
-    mov si, [bp + 4]
-    add si, 2
-    push si
-    mov si, [bp + 6]
-    push si
-    add ax, [bp + 8]                    ; rightmostposition
-    push ax
-    call print
-
-    pop bp
-    ret 8
+    loop next_color
+    ret
 
 ; -----------------------------------------------------------------------------
 ; Function: set_cursor_vis
@@ -354,9 +265,9 @@ w_bitmap db 80h, 02h
          db 14h, 50h
          db 14h, 50h
          db 08h, 20h
+red_shades db 58, 55, 50, 45, 40, 35, 30, 25, 20; Bright to dark red
 ; Row color table, from top to bottom row
-row_colors db 0x0C, 0x0E, 0x0E, 0x0A, 0x0A, 0x01, 0x01, 0x05, 0x0D
-
+row_colors db 32, 33, 34, 35, 36, 37, 38, 39, 40  ; Use only custom red shades
 ; Pad to 512 bytes for an MBR:
 padding times 510 - ($ - $$) db 0
 
