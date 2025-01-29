@@ -46,7 +46,7 @@ start:
     mov si, w_bitmap   ; source bitmap start address
 
     mov dx, 9
-    ;push SCALING_FACTOR
+    push SCALING_FACTOR
 draw_rows:
     mov ax, [si]
 
@@ -88,17 +88,15 @@ next_right:
     loop draw_right_cols
 
 scale_vertically:
-    ;pop cx
-    ;dec cx
-    ;cmp cx, 0
-    ;jz next_row
-    ;push cx
-    ;mov cx, dx                        ; Restore row counter
-    ;jmp draw_rows
-next_row:
-    add di, 320 - 16 * SCALING_FACTOR ; Move to next row
-
-    ;push SCALING_FACTOR
+    add di, 320 - 16 * SCALING_FACTOR ; Move to next VGA row
+    pop cx
+    dec cx
+    cmp cx, 0
+    jz next_source_row
+    push cx
+    jmp draw_rows
+next_source_row:
+    push SCALING_FACTOR
     add si, 2
     ;loop draw_rows
     dec dx
