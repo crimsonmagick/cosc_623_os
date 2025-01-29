@@ -45,16 +45,16 @@ start:
     mov di, LOGO_START_Y * VGA_DISPLAY_WIDTH + LOGO_START_X
     mov si, w_bitmap   ; source bitmap start address
 
-mov cx, 9              ; 9 rows
-.draw_rows:
-    lodsw              ; Load 16-bit row into AX (AL=left byte, AH=right byte)
-    mov dx, cx         ; Save row counter
+    mov dx, 9
+    ;push SCALING_FACTOR
+draw_rows:
+    mov ax, [si]
 
     ; Process left 8 pixels (AL)
     mov cx, 8
-.draw_left_cols:
+draw_left_cols:
     shl al, 1          ; Shift left (test MSB of AL)
-    jnc .skip_left
+    jnc skip_left
 
     push cx
     push ax
@@ -63,31 +63,46 @@ mov cx, 9              ; 9 rows
     rep stosb
     pop ax
     pop cx
-    jmp .next_left
-.skip_left:
+    jmp next_left
+skip_left:
     add di, SCALING_FACTOR
-.next_left:
-    loop .draw_left_cols
+next_left:
+    loop draw_left_cols
 
     ; Process right 8 pixels (AH)
     mov cx, 8
-.draw_right_cols:
+draw_right_cols:
     shl ah, 1          ; Shift left (test MSB of AH)
-    jnc .skip_right
-    mov bx, cx
+    jnc skip_right
+    push cx
+    push ax
     mov cx, SCALING_FACTOR
     mov al, 0x0F
     rep stosb
-    mov cx, bx
-    jmp .next_right
-.skip_right:
-     add di, SCALING_FACTOR
-.next_right:
-     loop .draw_right_cols
+    pop ax
+    pop cx
+    jmp next_right
+skip_right:
+    add di, SCALING_FACTOR
+next_right:
+    loop draw_right_cols
 
+scale_vertically:
+    ;pop cx
+    ;dec cx
+    ;cmp cx, 0
+    ;jz next_row
+    ;push cx
+    ;mov cx, dx                        ; Restore row counter
+    ;jmp draw_rows
+next_row:
     add di, 320 - 16 * SCALING_FACTOR ; Move to next row
-    mov cx, dx                        ; Restore row counter
-    loop .draw_rows
+
+    ;push SCALING_FACTOR
+    add si, 2
+    ;loop draw_rows
+    dec dx
+    jnz draw_rows
 
     ; Wait for key press
     mov ah, 0x00
