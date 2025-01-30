@@ -63,17 +63,23 @@ start:
     push topline             ; Address of 3-tuple
     call draw_line
 
-    ;push namelen
-    ;push name
-    ;push LINE_ROW_NAME
-    ;push CENTER_VGA_TXT(namelen)
-    ;call print
+    push namelen
+    push name
+    push LINE_ROW_NAME
+    push CENTER_VGA_TXT(namelen)
+    call print
 
     push welboslen - 1       ; Repeat count
     push CENTER_VGA_TXT(welboslen)   ; Column
     push LINE_ROW_BOTTOM     ; Row
     push bottomline             ; Address of 3-tuple
     call draw_line
+
+    push anykeylen
+    push anykey
+    push LINE_ROW_ANYKEY
+    push CENTER_VGA_TXT(anykeylen)
+    call print
 
     ; Wait for key press
     mov ah, 0x00
@@ -104,20 +110,19 @@ draw_logo:
     mov di, LOGO_START_Y * VGA_DISPLAY_WIDTH + LOGO_START_X
     mov si, w_bitmap   ; source bitmap start address
 
-    mov dx, 9
+    mov dx, 9                  ; logical row that we're calculating
     push SCALING_FACTOR
 draw_rows:
     mov bx, 9
-    sub bx, dx          ; if dx=9 => bx=0, dx=8 => bx=1, ...
+    sub bx, dx                 ; determine color for this row
     mov bl, [row_colors + bx]  ; store row color in BL (or AL, but we’ll need AL soon)
+    mov ax, [si]               ; retrieve pixels for this row
 
-    mov ax, [si]
-
-    ; Process left 8 pixels (AL)
-    mov cx, 8
-draw_left_cols:
-    shl al, 1          ; Shift left (test MSB of AL)
-    jnc skip_left
+    ; Process 16 pixels
+    mov cx, 16
+draw_row:
+    shl ax, 1          ; Shift left (test MSB of AX)
+    jnc skip_column
 
     push cx
     push ax
@@ -126,29 +131,11 @@ draw_left_cols:
     rep stosb
     pop ax
     pop cx
-    jmp next_left
-skip_left:
+    jmp next_column
+skip_column:
     add di, SCALING_FACTOR
-next_left:
-    loop draw_left_cols
-
-    ; Process right 8 pixels (AH)
-    mov cx, 8
-draw_right_cols:
-    shl ah, 1          ; Shift left (test MSB of AH)
-    jnc skip_right
-    push cx
-    push ax
-    mov cx, SCALING_FACTOR
-    mov al, bl
-    rep stosb
-    pop ax
-    pop cx
-    jmp next_right
-skip_right:
-    add di, SCALING_FACTOR
-next_right:
-    loop draw_right_cols
+next_column:
+    loop draw_row
 
 scale_vertically:
     add di, 320 - 16 * SCALING_FACTOR ; Move to next VGA row
