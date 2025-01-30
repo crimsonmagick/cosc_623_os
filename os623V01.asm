@@ -40,6 +40,7 @@ start:
     call set_red_gradient_palette
     call draw_logo
 
+    push COLOR_1
     push welboslen
     push welbos
     push MESSAGE_ROW
@@ -52,6 +53,7 @@ start:
     push topline             ; Address of 3-tuple
     call draw_line
 
+    push COLOR_1
     push namelen
     push name
     push LINE_ROW_NAME
@@ -64,6 +66,7 @@ start:
     push bottomline             ; Address of 3-tuple
     call draw_line
 
+    push COLOR_1
     push anykeylen
     push anykey
     push LINE_ROW_ANYKEY
@@ -151,8 +154,10 @@ draw_line:
     mov bp, sp
 
     ;left edge
+    push COLOR_1
     push 1
-    push word [bp + 4]
+    mov si, [bp + 4]
+    push si
     mov si, [bp + 6]
     push si
     mov si, [bp + 8]
@@ -167,11 +172,13 @@ draw_line_middle:
     je draw_line_right
     push ax
 
+    push COLOR_1
     push 1
     mov si, [bp + 4]
     inc si
     push si
-    push word [bp + 6]
+    mov si, [bp + 6]
+    push si
     mov si, [bp + 8]
     add si, ax
     push si
@@ -182,6 +189,7 @@ draw_line_middle:
     jmp draw_line_middle
 
 draw_line_right:
+    push COLOR_1
     push 1
     mov si, [bp + 4]
     add si, 2
@@ -261,11 +269,11 @@ print:
     push bp ; save bp for the return
     mov  bp, sp ; update bp to create a new "stack frame"
 
+    mov bl, [bp+12]        ; Attribute (lightgreen on black)
     mov cx, [bp+10]        ; length of the string
     mov si, [bp+8]         ; address of the string
     mov dh, [bp+6]         ; row position
     mov dl, [bp+4]         ; column position
-    mov bl, COLOR_1        ; Attribute (lightgreen on black)
 
     ; We need ES:BP provides the pointer to the string - load the data segment (DS) base into ES
     push ds
@@ -277,8 +285,8 @@ print:
     mov  bp, si             ; Put offset in BP (ES:BP points to the string)
     int  BIOS_VIDEO
 
-    pop  bp                 ; Restore stack frame
-    ret 8
+    pop bp                 ; Restore stack frame
+    ret 10
 
 ; data:
 topline             db 0xC9
