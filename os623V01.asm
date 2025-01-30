@@ -345,15 +345,15 @@ namelen             equ ($ - name)
 anykey              db "Press any key to continue..."
 anykeylen           equ ($ - anykey)
 prompt_sym          db "$"
-w_bitmap db 80h, 02h
-         db 80h, 02h
-         db 40h, 04h
-         db 40h, 04h
-         db 21h, 08h
-         db 22h, 88h
-         db 14h, 50h
-         db 14h, 50h
-         db 08h, 20h
+w_bitmap db 02h, 80h
+         db 02h, 80h
+         db 04h, 40h
+         db 04h, 40h
+         db 08h, 21h
+         db 88h, 22h
+         db 50h, 14h
+         db 50h, 14h
+         db 20h, 08h
 red_shades db 58, 55, 50, 45, 40, 35, 30, 25, 20; Bright to dark red
 ; Row color table, from top to bottom row
 row_colors db 32, 33, 34, 35, 36, 37, 38, 39, 40  ; Use only custom red shades
