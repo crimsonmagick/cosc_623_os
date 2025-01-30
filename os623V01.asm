@@ -8,7 +8,9 @@ VGA_MODE            equ 0x0013
 VGA_DISPLAY_WIDTH   equ 320
 DISPLAY_WIDTH       equ 80
 DISPLAY_HEIGHT      equ 25
-MESSAGE_ROW         equ DISPLAY_HEIGHT / 2 - 3
+VGA_TXT_DISP_WIDTH  equ 40
+VGA_TXT_DISP_HEIGHT equ 25
+MESSAGE_ROW         equ VGA_TXT_DISP_HEIGHT / 2 + 3
 LINE_ROW_TOP        equ MESSAGE_ROW - 1
 LINE_ROW_NAME       equ MESSAGE_ROW + 1
 LINE_ROW_BOTTOM     equ LINE_ROW_NAME + 1
@@ -16,13 +18,14 @@ LINE_ROW_ANYKEY     equ LINE_ROW_BOTTOM + 2
 TEXT_MODE           equ 0x03
 COLOR_1             equ 0x0F
 LOGO_START_X        equ (VGA_DISPLAY_WIDTH - (16 * SCALING_FACTOR)) / 2
-LOGO_START_Y  equ (200 - (9 * SCALING_FACTOR)) / 2
+LOGO_START_Y        equ (200 - (9 * SCALING_FACTOR)) / 2 -40
 
 SCALING_FACTOR      equ 0x8
 FALSE               equ 0x00
 
 
-%define CENTER(len) ((DISPLAY_WIDTH - len) / 2)
+%define CENTER_TXT(len) ((DISPLAY_WIDTH - len) / 2)
+%define CENTER_VGA_TXT(len) ((VGA_TXT_DISP_WIDTH - len) / 2)
 
 org 0x7c00
 jmp short start
@@ -41,6 +44,36 @@ start:
 
     call set_red_gradient_palette
     call draw_logo
+
+    push welboslen
+    push welbos
+    push MESSAGE_ROW
+    push CENTER_VGA_TXT(welboslen)
+    call print
+
+    push welboslen - 1       ; Repeat count
+    push CENTER_VGA_TXT(welboslen)   ; Column
+    push LINE_ROW_TOP        ; Row
+    push topline             ; Address of 3-tuple
+    call draw_line
+
+    push welboslen - 1       ; Repeat count
+    push CENTER_VGA_TXT(welboslen)   ; Column
+    push LINE_ROW_TOP        ; Row
+    push topline             ; Address of 3-tuple
+    call draw_line
+
+    ;push namelen
+    ;push name
+    ;push LINE_ROW_NAME
+    ;push CENTER_VGA_TXT(namelen)
+    ;call print
+
+    push welboslen - 1       ; Repeat count
+    push CENTER_VGA_TXT(welboslen)   ; Column
+    push LINE_ROW_BOTTOM     ; Row
+    push bottomline             ; Address of 3-tuple
+    call draw_line
 
     ; Wait for key press
     mov ah, 0x00
@@ -62,7 +95,7 @@ start:
     call set_cursor_pos
     call print
 end:
-    jmp short end
+    int 20h
 
 draw_logo:
     mov ax, 0xA000     ; memory mapped I/O segment for VGA
@@ -133,6 +166,57 @@ next_source_row:
     jmp draw_rows
 logo_done:
     ret
+
+draw_line:
+    push bp
+    mov bp, sp
+
+    ;left edge
+    push 1
+    mov si, [bp + 4]
+    push si
+    mov si, [bp + 6]
+    push si
+    mov si, [bp + 8]
+    push si
+    call print
+
+    ; set up middle loop
+    mov ax, 1                           ; break when == to cx
+draw_line_middle:
+    mov cx, [bp + 10]
+    cmp ax, cx
+    je draw_line_right
+    push ax
+
+    push 1
+    mov si, [bp + 4]
+    inc si
+    push si
+    mov si, [bp + 6]
+    push si
+    mov si, [bp + 8]
+    add si, ax
+    push si
+    call print
+
+    pop ax
+    inc ax
+    jmp draw_line_middle
+
+draw_line_right:
+    push 1
+    mov si, [bp + 4]
+    add si, 2
+    push si
+    mov si, [bp + 6]
+    push si
+    add ax, [bp + 8]                    ; rightmostposition
+    push ax
+    call print
+
+    pop bp
+    ret 8
 
 
 set_cursor_pos:
