@@ -16,7 +16,11 @@ LINE_ROW_NAME       equ MESSAGE_ROW + 1
 LINE_ROW_BOTTOM     equ LINE_ROW_NAME + 1
 LINE_ROW_ANYKEY     equ LINE_ROW_BOTTOM + 2
 TEXT_MODE           equ 0x03
-WHITE_BLACK             equ 0x0F
+MAGENTA_BLACK       equ 0x0D
+WHITE_BLACK         equ 0x0F
+RED_BLACK           equ 0x04
+YELLOW_BLACK        equ 0x0E
+LIGHT_RED           equ 0x0C
 LOGO_START_X        equ (VGA_DISPLAY_WIDTH - (16 * SCALING_FACTOR)) / 2
 LOGO_START_Y        equ (200 - (9 * SCALING_FACTOR)) / 2 -40
 
@@ -40,35 +44,35 @@ start:
     call set_red_gradient_palette
     call draw_logo
 
-    push WHITE_BLACK
+    push RED_BLACK
     push welboslen
     push welbos
     push MESSAGE_ROW
     push CENTER_VGA_TXT(welboslen)
     call print
 
-    push WHITE_BLACK
+    push RED_BLACK
     push welboslen - 1       ; Repeat count
     push CENTER_VGA_TXT(welboslen)   ; Column
     push LINE_ROW_TOP        ; Row
     push topline             ; Address of 3-tuple
     call draw_line
 
-    push WHITE_BLACK
+    push RED_BLACK
     push namelen
     push name
     push LINE_ROW_NAME
     push CENTER_VGA_TXT(namelen)
     call print
 
-    push WHITE_BLACK
+    push RED_BLACK
     push welboslen - 1       ; Repeat count
     push CENTER_VGA_TXT(welboslen)   ; Column
     push LINE_ROW_BOTTOM     ; Row
     push bottomline             ; Address of 3-tuple
     call draw_line
 
-    push WHITE_BLACK
+    push YELLOW_BLACK
     push anykeylen
     push anykey
     push LINE_ROW_ANYKEY
@@ -92,11 +96,13 @@ start:
 
     call clear_screen
 
+    call set_cursor_pos
+
+    push MAGENTA_BLACK
     push 1
     push prompt_sym
     push 0
     push 0
-    call set_cursor_pos
     call print
 end:
     int 20h
