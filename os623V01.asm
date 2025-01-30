@@ -16,7 +16,7 @@ LINE_ROW_NAME       equ MESSAGE_ROW + 1
 LINE_ROW_BOTTOM     equ LINE_ROW_NAME + 1
 LINE_ROW_ANYKEY     equ LINE_ROW_BOTTOM + 2
 TEXT_MODE           equ 0x03
-COLOR_1             equ 0x0F
+WHITE_BLACK             equ 0x0F
 LOGO_START_X        equ (VGA_DISPLAY_WIDTH - (16 * SCALING_FACTOR)) / 2
 LOGO_START_Y        equ (200 - (9 * SCALING_FACTOR)) / 2 -40
 
@@ -40,39 +40,42 @@ start:
     call set_red_gradient_palette
     call draw_logo
 
-    push COLOR_1
+    push WHITE_BLACK
     push welboslen
     push welbos
     push MESSAGE_ROW
     push CENTER_VGA_TXT(welboslen)
     call print
 
+    push WHITE_BLACK
     push welboslen - 1       ; Repeat count
     push CENTER_VGA_TXT(welboslen)   ; Column
     push LINE_ROW_TOP        ; Row
     push topline             ; Address of 3-tuple
     call draw_line
 
-    push COLOR_1
+    push WHITE_BLACK
     push namelen
     push name
     push LINE_ROW_NAME
     push CENTER_VGA_TXT(namelen)
     call print
 
+    push WHITE_BLACK
     push welboslen - 1       ; Repeat count
     push CENTER_VGA_TXT(welboslen)   ; Column
     push LINE_ROW_BOTTOM     ; Row
     push bottomline             ; Address of 3-tuple
     call draw_line
 
-    push COLOR_1
+    push WHITE_BLACK
     push anykeylen
     push anykey
     push LINE_ROW_ANYKEY
     push CENTER_VGA_TXT(anykeylen)
     call print
 
+    push WHITE_BLACK
     push VGA_TXT_DISP_WIDTH - 1       ; Repeat count
     push 0   ; Column
     push LINE_ROW_ANYKEY + 2          ; Row
@@ -154,7 +157,7 @@ draw_line:
     mov bp, sp
 
     ;left edge
-    push COLOR_1
+    push word [bp + 12]
     push 1
     mov si, [bp + 4]
     push si
@@ -172,7 +175,7 @@ draw_line_middle:
     je draw_line_right
     push ax
 
-    push COLOR_1
+    push word [bp + 12]
     push 1
     mov si, [bp + 4]
     inc si
@@ -189,7 +192,7 @@ draw_line_middle:
     jmp draw_line_middle
 
 draw_line_right:
-    push COLOR_1
+    push word [bp + 12]
     push 1
     mov si, [bp + 4]
     add si, 2
@@ -201,7 +204,7 @@ draw_line_right:
     call print
 
     pop bp
-    ret 8
+    ret 10
 
 
 set_cursor_pos:
@@ -243,7 +246,7 @@ next_color:
 clear_screen:
     mov ah, 0x06            ; BIOS scroll (function 06h)
     mov al, 0               ; Scroll all lines
-    mov bh, COLOR_1         ; Attribute
+    mov bh, WHITE_BLACK         ; Attribute
     mov ch, 0               ; Upper-left row
     mov cl, 0               ; Upper-left column
     mov dh, 24              ; Lower-right row
