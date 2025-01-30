@@ -34,11 +34,6 @@ nop
 bsOEM       db "WelbOS v01"         ; OEM String
 
 start:
-    push FALSE
-    call set_cursor_vis
-
-    call clear_screen
-
     mov ax, FUN_VIDEO_MODE + VGA_MODE
     int BIOS_VIDEO
 
@@ -50,12 +45,6 @@ start:
     push MESSAGE_ROW
     push CENTER_VGA_TXT(welboslen)
     call print
-
-    push welboslen - 1       ; Repeat count
-    push CENTER_VGA_TXT(welboslen)   ; Column
-    push LINE_ROW_TOP        ; Row
-    push topline             ; Address of 3-tuple
-    call draw_line
 
     push welboslen - 1       ; Repeat count
     push CENTER_VGA_TXT(welboslen)   ; Column
@@ -81,6 +70,12 @@ start:
     push CENTER_VGA_TXT(anykeylen)
     call print
 
+    push VGA_TXT_DISP_WIDTH - 1       ; Repeat count
+    push 0   ; Column
+    push LINE_ROW_ANYKEY + 2          ; Row
+    push blockline                    ; Address of 3-tuple
+    call draw_line
+
     ; Wait for key press
     mov ah, 0x00
     int 0x16
@@ -89,9 +84,6 @@ start:
     mov ax, 0x0003
     int BIOS_VIDEO
 
-    ; Restore cursor and clean up
-    push 0x01
-    call set_cursor_vis
     call clear_screen
 
     push 1
@@ -233,34 +225,6 @@ next_color:
     ret
 
 ; -----------------------------------------------------------------------------
-; Function: set_cursor_vis
-; Description: Sets cursor visibility
-; Inputs:
-;   - [sp + 4] Enable/disable cursor flag. Enable if param != 0, disable otherwise.
-; Outputs:
-;   - None.
-; Modifies:
-;   - AX, CX
-; Calls:
-;   - BIOS interrupt 0x10, function 0x01.
-; -----------------------------------------------------------------------------
-set_cursor_vis:
-                        ; avoiding using a stack frame just to see if I can
-    pop bx              ; caller address
-    pop ax              ; boolean - enable/disable (non zero is high)
-    push bx             ; restore bx to the stack for the final return
-    test al, al
-    jz disable_curs
-    mov ch, 0x00
-    jmp curs_cont
-disable_curs:
-    mov ch, 0x20
-curs_cont:
-    mov ah, 0x01
-    int BIOS_VIDEO
-    ret 2
-
-; -----------------------------------------------------------------------------
 ; Function: clear_screen
 ; Description: Clears and resets the screen.
 ; Inputs: None.
@@ -325,6 +289,9 @@ topline             db 0xC9
 bottomline          db 0xC8
                     db 0xCD
                     db 0xBC
+blockline           db 0xB0
+                    db 0xDC
+                    db 0xB0
 welbos              db 0xBA, `    WelbOS v01   `, 0xBA
 welboslen           equ ($ - welbos)
 name                db 0xBA, `   Welby Seely   `, 0xBA
