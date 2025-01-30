@@ -289,9 +289,9 @@ topline             db 0xC9
 bottomline          db 0xC8
                     db 0xCD
                     db 0xBC
-blockline           db 0xB0
+blockline           db 0xDE
                     db 0xDC
-                    db 0xB0
+                    db 0xDD
 welbos              db 0xBA, `    WelbOS v01   `, 0xBA
 welboslen           equ ($ - welbos)
 name                db 0xBA, `   Welby Seely   `, 0xBA
