@@ -152,8 +152,7 @@ draw_line:
 
     ;left edge
     push 1
-    mov si, [bp + 4]
-    push si
+    push word [bp + 4]
     mov si, [bp + 6]
     push si
     mov si, [bp + 8]
@@ -172,8 +171,7 @@ draw_line_middle:
     mov si, [bp + 4]
     inc si
     push si
-    mov si, [bp + 6]
-    push si
+    push word [bp + 6]
     mov si, [bp + 8]
     add si, ax
     push si
