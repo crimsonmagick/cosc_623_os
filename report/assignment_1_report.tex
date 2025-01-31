@@ -1,0 +1,65 @@
+\documentclass{article}
+\usepackage{geometry}
+\geometry{a4paper, margin=1in}
+\usepackage{graphicx}
+\usepackage[colorlinks=true, linkcolor=blue, citecolor=blue, urlcolor=blue]{hyperref}
+\usepackage{listings}
+\usepackage{xcolor}
+\usepackage{amsmath}
+\usepackage{enumitem}
+
+\lstset{
+    language=NASM,
+    basicstyle=\ttfamily\footnotesize\selectfont, % use the selected monospaced font
+    backgroundcolor=\color{white},
+    keywordstyle=\color{blue},
+    commentstyle=\color{gray},
+    stringstyle=\color{red},
+    numbers=left,
+    numberstyle=\tiny\color{gray},
+    stepnumber=1,
+    numbersep=10pt,
+    frame=single,
+    breaklines=true,
+    captionpos=b,
+    tabsize=4
+}
+
+\title{Assignment 1 - Report}
+\author{
+    [Welby Seely] \\
+    \texttt{[wseely@emich.edu]}
+}
+\date{\today}
+
+\begin{document}
+
+    \maketitle
+
+    \section{References}\label{sec:references}
+    \bibliographystyle{plainurl}
+    \renewcommand{\refname}{} % Suppress the automatic bibliography title
+    \bibliography{bibliography}
+
+    \section{Design}\label{sec:design}
+    Referenced The Standard ML Basis Library~\cite{sml_basis} and class notes~\cite{zhang_class_notes} while designing functions.
+    \\
+    Most functions were designed with an inner helper function, defined within the outer function's closure in order to encapsulate logic.
+    For example:
+    The inner function ``dl()'' is inaccessible from outside the primary function, ``delntch''.
+    This keeps the design clean and the interface to the logic clear.
+
+    \section{Requirements}\label{sec:difficulty}
+    Some of these functions could likely be redesigned, reduced into a single function.
+    For example, my original design of ``multin'' used a helper functions:
+    \\
+    \begin{lstlisting}[language=Python]
+    \end{lstlisting}
+    The function is reduced to just two or three lines!
+
+    \section{Appendix 1: Source Code}\label{sec:appendix_1}
+    \begin{lstlisting}
+
+    \end{lstlisting}
+
+\end{document}

@@ -1,9 +1,13 @@
 bits 16
-BIOS_VIDEO          equ 0x10
-DISPLAY_FUN         equ 0x13
-
+VIDEO_SERVICES      equ 0x10
+FUN_DISPLAY         equ 0x13
 FUN_VIDEO_MODE      equ 0x0000
 VGA_MODE            equ 0x0013
+TEXT_MODE           equ 0x0003
+FUN_CURSOR_POS      equ 0x02
+
+KEYBOARD_SERVICES   equ 0x16
+TERMINATE_PROGRAM   equ 0x20
 
 VGA_DISPLAY_WIDTH   equ 320
 DISPLAY_WIDTH       equ 80
@@ -35,11 +39,11 @@ org 0x7c00
 jmp short start
 nop
 
-bsOEM       db "WelbOS v01"         ; OEM String
+bsOEM       db "WelbOS v01"           ; OEM String
 
 start:
-    mov ax, FUN_VIDEO_MODE + VGA_MODE
-    int BIOS_VIDEO
+    mov ax, FUN_VIDEO_MODE + VGA_MODE ; Dim: 320 x 200 in pixels, 40 x 25 in text characters
+    int VIDEO_SERVICES
 
     call set_red_gradient_palette
     call draw_logo
@@ -52,10 +56,10 @@ start:
     call print
 
     push RED_BLACK
-    push welboslen - 1       ; Repeat count
+    push welboslen - 1               ; Repeat count
     push CENTER_VGA_TXT(welboslen)   ; Column
-    push LINE_ROW_TOP        ; Row
-    push topline             ; Address of 3-tuple
+    push LINE_ROW_TOP                ; Row
+    push topline                     ; Address of 3-tuple
     call draw_line
 
     push RED_BLACK
@@ -66,10 +70,10 @@ start:
     call print
 
     push RED_BLACK
-    push welboslen - 1       ; Repeat count
-    push CENTER_VGA_TXT(welboslen)   ; Column
-    push LINE_ROW_BOTTOM     ; Row
-    push bottomline             ; Address of 3-tuple
+    push welboslen - 1                ; Repeat count
+    push CENTER_VGA_TXT(welboslen)    ; Column
+    push LINE_ROW_BOTTOM              ; Row
+    push bottomline                   ; Address of 3-tuple
     call draw_line
 
     push YELLOW_BLACK
@@ -79,24 +83,23 @@ start:
     push CENTER_VGA_TXT(anykeylen)
     call print
 
-    push WHITE_BLACK
+    push RED_BLACK
     push VGA_TXT_DISP_WIDTH - 1       ; Repeat count
-    push 0   ; Column
+    push 0                            ; Column
     push LINE_ROW_ANYKEY + 2          ; Row
     push blockline                    ; Address of 3-tuple
     call draw_line
 
     ; Wait for key press
     mov ah, 0x00
-    int 0x16
+    int KEYBOARD_SERVICES
 
     ; Switch back to text mode (80x25)
-    mov ax, 0x0003
-    int BIOS_VIDEO
+    mov ax, TEXT_MODE
+    int VIDEO_SERVICES
 
     call clear_screen
-
-    call set_cursor_pos
+    call reset_cursor_pos
 
     push MAGENTA_BLACK
     push 1
@@ -105,28 +108,39 @@ start:
     push 0
     call print
 end:
-    int 20h
+    int TERMINATE_PROGRAM
 
+; -----------------------------------------------------------------------------
+; Procedure: draw_logo
+; Description: Draws the bootloader logo to the screen.
+; Inputs: None. TODO - X and Y coordinates
+; Outputs: None.
+; Modifies:
+;   - AX, BX, BL, DI, ES, SI
+;   - Segment 0xA000 (BIOS memory mapped VHA region)
+; Calls: N/A
+; Notes: Assumes BIOS is in VGA mode
+; -----------------------------------------------------------------------------
 draw_logo:
     mov ax, 0xA000     ; memory mapped I/O segment for VGA
     mov es, ax
 
     mov di, LOGO_START_Y * VGA_DISPLAY_WIDTH + LOGO_START_X
-    mov si, w_bitmap   ; source bitmap start address
+    mov si, w_bitmap           ; source bitmap start address
 
     mov dx, 9                  ; logical row that we're calculating
     push SCALING_FACTOR
-draw_rows:
+    
+.draw_rows:
     mov bx, 9
     sub bx, dx                 ; determine color for this row
-    mov bl, [row_colors + bx]  ; store row color in BL (or AL, but we’ll need AL soon)
+    mov bl, [row_colors + bx]  ; store row color in BL
     mov ax, [si]               ; retrieve pixels for this row
 
-    ; Process 16 pixels
-    mov cx, 16
-draw_row:
-    shl ax, 1          ; Shift left (test MSB of AX)
-    jnc skip_column
+    mov cx, 16                 ; Process 16 pixels
+.draw_row:
+    shl ax, 1                  ; Shift left (test MSB of AX)
+    jnc .skip_column
 
     push cx
     push ax
@@ -135,29 +149,42 @@ draw_row:
     rep stosb
     pop ax
     pop cx
-    jmp next_column
-skip_column:
+    jmp .next_column
+.skip_column:
     add di, SCALING_FACTOR
-next_column:
-    loop draw_row
+.next_column:
+    loop .draw_row
 
-scale_vertically:
+.scale_vertically:
     add di, 320 - 16 * SCALING_FACTOR ; Move to next VGA row
     pop cx
     dec cx
     cmp cx, 0
-    jz next_source_row
+    jz .next_source_row
     push cx
-    jmp draw_rows
-next_source_row:
+    jmp .draw_rows
+.next_source_row:
     add si, 2
     dec dx
-    jz logo_done
+    jz .logo_done
     push SCALING_FACTOR
-    jmp draw_rows
-logo_done:
+    jmp .draw_rows
+.logo_done:
     ret
 
+; -----------------------------------------------------------------------------
+; Procedure: draw_line
+; Description: Draws a line for the splash screen in both text and graphics modes.
+; Inputs:
+;   - [sp+4] Address of 3-tuple of ASCII characters
+;   - [sp+6] Row
+;   - [sp+8] Column
+;   - [sp+10] Number of times to repeat line body
+;   - [sp+12] Color of the string.
+; Modifies:
+;   - AX, BX, BL, DI, ES, SI
+; Calls: print
+; -----------------------------------------------------------------------------
 draw_line:
     push bp
     mov bp, sp
@@ -175,10 +202,10 @@ draw_line:
 
     ; set up middle loop
     mov ax, 1                           ; break when == to cx
-draw_line_middle:
+.draw_line_middle:
     mov cx, [bp + 10]
     cmp ax, cx
-    je draw_line_right
+    je .draw_line_right
     push ax
 
     push word [bp + 12]
@@ -195,9 +222,9 @@ draw_line_middle:
 
     pop ax
     inc ax
-    jmp draw_line_middle
+    jmp .draw_line_middle
 
-draw_line_right:
+.draw_line_right:
     push word [bp + 12]
     push 1
     mov si, [bp + 4]
@@ -205,74 +232,96 @@ draw_line_right:
     push si
     mov si, [bp + 6]
     push si
-    add ax, [bp + 8]                    ; rightmostposition
+    add ax, [bp + 8]                    ; rightmost position
     push ax
     call print
 
     pop bp
     ret 10
 
-
-set_cursor_pos:
-    mov ah, 0x02        ; BIOS function: set cursor position
-    mov bh, 0x00        ; Page number (0)
-    mov dh, 0x00        ; Row (0)
-    mov dl, 0x01        ; Column (1)
-    int BIOS_VIDEO
-    ret
-
-set_red_gradient_palette:
-    mov dx, 0x3C8   ; VGA color index port
-    mov al, 32      ; Start setting colors from index 32
-    out dx, al
-    inc dx          ; Now dx = 0x3C9 (RGB color data port)
-
-    mov cx, 9       ; 9 shades for 9 rows
-    mov si, red_shades
-next_color:
-    mov al, [si]    ; Load Red intensity
-    out dx, al      ; Set Red value
-    xor al, al      ; Set Green=0
-    out dx, al
-    out dx, al      ; Set Blue=0
-    inc si
-    loop next_color
+; -----------------------------------------------------------------------------
+; Procedure: reset_cursor_pos
+; Description: Resets curor position to top left
+; Inputs: None.
+; Outputs: None.
+; Modifies:
+;   - ah, bh, dh, dl
+; Calls:
+;   - VIDEO_SERVICES (0x10)
+; -----------------------------------------------------------------------------
+reset_cursor_pos:
+    mov ah, FUN_CURSOR_POS       ; BIOS Procedure: set cursor position
+    mov bh, 0x00                 ; Page number (0)
+    mov dh, 0x00                 ; Row (0)
+    mov dl, 0x01                 ; Column (1)
+    int VIDEO_SERVICES
     ret
 
 ; -----------------------------------------------------------------------------
-; Function: clear_screen
-; Description: Clears and resets the screen.
+; Procedure: set_red_gradient_palette
+; Description: Sets gradient for the logo
+; Inputs: None.
+; Outputs: None.
+; Modifies:
+;   - No registers
+;   - port 0x3C8, VGA color index port
+;   - port 0x3C9, VHA RGB color data port
+; Calls:
+;   - N/A
+; -----------------------------------------------------------------------------
+set_red_gradient_palette:
+    mov dx, 0x3C8   ; VGA color index port - this will be incremented after writing an RGB triplet
+    mov al, 32      ; Start setting colors from palette index 32
+    out dx, al
+    inc dx          ; Set dx = 0x3C9 (RGB color data port to write triplet to)
+
+    mov cx, 9       ; 9 shades for 9 rows of the "W"
+    mov si, red_shades
+.next_color:
+    mov al, [si]    ; Load color intensity
+    out dx, al      ; Set R
+    xor al, al      ; Set G=0
+    out dx, al
+    out dx, al      ; Set Blue=0
+    inc si
+    loop .next_color
+    ret
+
+; -----------------------------------------------------------------------------
+; Procedure: clear_screen
+; Description: Clears and resets the screen in text mode.
 ; Inputs: None.
 ; Outputs: None.
 ; Modifies:
 ;   - AX, BX, CX, DX
 ; Calls:
-;   - BIOS interrupt 0x10, function 0x06.
+;   - BIOS interrupt 0x10, Procedure 0x06.
 ; -----------------------------------------------------------------------------
 clear_screen:
-    mov ah, 0x06            ; BIOS scroll (function 06h)
+    mov ah, 0x06            ; BIOS scroll (Procedure 06h)
     mov al, 0               ; Scroll all lines
     mov bh, WHITE_BLACK         ; Attribute
     mov ch, 0               ; Upper-left row
     mov cl, 0               ; Upper-left column
     mov dh, 24              ; Lower-right row
     mov dl, 79              ; Lower-right column
-    int BIOS_VIDEO          ; BIOS video interrupt
+    int VIDEO_SERVICES          ; BIOS video interrupt
     ret
 
 ; -----------------------------------------------------------------------------
-; Function: print
+; Procedure: print
 ; Description: Prints a string to the console.
 ; Inputs:
 ;   - [sp+4] Column position to begin writing the string.
 ;   - [sp+6] Row position to begin writing the string.
 ;   - [sp+8] Memory address location of the string.
 ;   - [sp+10] Length of the string.
+;   - [sp+10] Color of the string.
 ; Outputs: None.
 ; Modifies:
 ;   - AX, BX, CX, DX
 ; Calls:
-;   - BIOS interrupt 0x10, function 0x13.
+;   - BIOS interrupt 0x10, Procedure 0x13.
 ; -----------------------------------------------------------------------------
 print:
     push bp ; save bp for the return
@@ -288,11 +337,11 @@ print:
     push ds
     pop es
 
-    mov  ah, DISPLAY_FUN    ; BIOS display string (function 13h)
+    mov  ah, FUN_DISPLAY    ; BIOS display string (Procedure 13h)
     mov  al, 0              ; Write mode = 1 (cursor stays after last char
     mov  bh, 0              ; Video page
     mov  bp, si             ; Put offset in BP (ES:BP points to the string)
-    int  BIOS_VIDEO
+    int  VIDEO_SERVICES
 
     pop bp                 ; Restore stack frame
     ret 10
