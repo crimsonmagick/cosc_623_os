@@ -64,6 +64,9 @@ start:
     int BIOS_VIDEO
 
     call set_red_gradient_palette
+    ;    mov di, LOGO_START_Y * VGA_DISPLAY_WIDTH + LOGO_START_X
+    push LOGO_START_X
+    push LOGO_START_Y
     call draw_logo
 
     push RED_BLACK
@@ -130,6 +133,15 @@ end:
     int 20h
 
 draw_logo:
+    push bp
+    mov bp, sp
+
+    mov ax, [bp + 4]
+    mov cx, VGA_DISPLAY_WIDTH
+    mul cx
+    add ax, [bp + 6]
+    mov di, ax
+
     mov ax, 0xA000     ; memory mapped I/O segment for VGA
     mov es, ax
 
@@ -178,7 +190,8 @@ next_source_row:
     push SCALING_FACTOR
     jmp draw_rows
 logo_done:
-    ret
+    pop bp
+    ret 4
 
 draw_line:
     push bp
