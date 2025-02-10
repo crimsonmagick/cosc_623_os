@@ -31,7 +31,7 @@ FALSE               equ 0x00
 %define CENTER_TXT(len) ((DISPLAY_WIDTH - len) / 2)
 %define CENTER_VGA_TXT(len) ((VGA_TXT_DISP_WIDTH - len) / 2)
 
-org 0x7c00
+org 0x7e00
 topline             db 0xC9
                     db 0xCD
                     db 0xBB
@@ -42,11 +42,8 @@ blockline           db 0xDE
                     db 0xDC
                     db 0xDD
 welbos              db 0xBA, `    WelbOS v01   `, 0xBA
-welboslen           equ ($ - welbos)
 name                db 0xBA, `   Welby Seely   `, 0xBA
-namelen             equ ($ - name)
 anykey              db "Press any key to continue..."
-anykeylen           equ ($ - anykey)
 prompt_sym          db '$'
 w_bitmap db 02h, 80h
          db 02h, 80h
