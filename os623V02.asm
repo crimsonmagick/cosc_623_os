@@ -313,7 +313,7 @@ name                db 0xBA, `   Welby Seely   `, 0xBA
 namelen             equ ($ - name)
 anykey              db "Press any key to continue..."
 anykeylen           equ ($ - anykey)
-prompt_sym          db "$"
+prompt_sym          db '$'
 w_bitmap db 02h, 80h
          db 02h, 80h
          db 04h, 40h
