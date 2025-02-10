@@ -38,6 +38,8 @@ nop
 bsOEM       db "WelbOS v01"         ; OEM String
 
 start:
+    call load_sector
+
     mov ax, FUN_VIDEO_MODE + VGA_MODE
     int BIOS_VIDEO
 
@@ -58,26 +60,26 @@ start:
     push topline             ; Address of 3-tuple
     call draw_line
 
-    push RED_BLACK
-    push namelen
-    push name
-    push LINE_ROW_NAME
-    push CENTER_VGA_TXT(namelen)
-    call print
+   ; push RED_BLACK
+   ; push namelen
+   ; push name
+   ; push LINE_ROW_NAME
+   ; push CENTER_VGA_TXT(namelen)
+   ; call print
 
-    push RED_BLACK
-    push welboslen - 1       ; Repeat count
-    push CENTER_VGA_TXT(welboslen)   ; Column
-    push LINE_ROW_BOTTOM     ; Row
-    push bottomline             ; Address of 3-tuple
-    call draw_line
+   ; push RED_BLACK
+   ; push welboslen - 1       ; Repeat count
+   ; push CENTER_VGA_TXT(welboslen)   ; Column
+   ; push LINE_ROW_BOTTOM     ; Row
+   ; push bottomline             ; Address of 3-tuple
+   ; call draw_line
 
-    push YELLOW_BLACK
-    push anykeylen
-    push anykey
-    push LINE_ROW_ANYKEY
-    push CENTER_VGA_TXT(anykeylen)
-    call print
+   ; push YELLOW_BLACK
+   ; push anykeylen
+   ; push anykey
+   ; push LINE_ROW_ANYKEY
+   ; push CENTER_VGA_TXT(anykeylen)
+   ; call print
 
     push WHITE_BLACK
     push VGA_TXT_DISP_WIDTH - 1       ; Repeat count
@@ -259,6 +261,29 @@ clear_screen:
     mov dl, 79              ; Lower-right column
     int BIOS_VIDEO          ; BIOS video interrupt
     ret
+
+; -----------------------------------------------------------------------------
+; Function: load_sector
+; Description: Loads sector 37 into memory
+; Inputs: None.
+; Outputs: None.
+; Modifies:
+;   - AX, BX, CX, DX, EX
+; Calls:
+;   - BIOS interrupt 0x13, function 0x02.
+; -----------------------------------------------------------------------------
+load_sector:
+	mov bx, 0x0000
+	mov es, bx
+	mov bx, 0x7e00
+	mov ah, 02h
+	mov al, 1
+	mov ch, 1
+	mov cl, 2
+	mov dh, 0
+	mov dl, 0
+	int 13h
+	ret
 
 ; -----------------------------------------------------------------------------
 ; Function: print
