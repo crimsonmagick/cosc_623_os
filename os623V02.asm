@@ -5,6 +5,9 @@ DISPLAY_FUN         equ 0x13
 FUN_VIDEO_MODE      equ 0x0000
 VGA_MODE            equ 0x0013
 
+BIOS_FLOPPY         equ 0x0013
+READ_SECTORS        equ 0x0002
+
 VGA_DISPLAY_WIDTH   equ 320
 DISPLAY_WIDTH       equ 80
 DISPLAY_HEIGHT      equ 25
@@ -293,13 +296,13 @@ load_sector:
 	mov bx, 0x0000
 	mov es, bx
 	mov bx, 0x7e00
-	mov ah, 02h
+	mov ah, READ_SECTORS
 	mov al, 1
 	mov ch, 1
 	mov cl, 2
 	mov dh, 0
 	mov dl, 0
-	int 13h
+	int BIOS_FLOPPY
 	ret
 
 ; -----------------------------------------------------------------------------
