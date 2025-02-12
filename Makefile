@@ -11,7 +11,7 @@ MBR			=  os623V.asm
 MBR_SRC		= $(subst V,$(VER),$(MBR))
 MBR_BIN		= $(subst .asm,.bin,$(MBR_SRC))
 
-DATA_SRC	=  data.asm
+DATA_SRC	=  loaderV02.asm
 DATA_BIN	=  data.bin
 
 
