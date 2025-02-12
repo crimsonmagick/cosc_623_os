@@ -24,8 +24,6 @@ WHITE_BLACK         equ 0x0F
 RED_BLACK           equ 0x04
 YELLOW_BLACK        equ 0x0E
 LIGHT_RED           equ 0x0C
-LOGO_START_X        equ (VGA_DISPLAY_WIDTH - (16 * SCALING_FACTOR)) / 2
-LOGO_START_Y        equ (200 - (9 * SCALING_FACTOR)) / 2 -40
 
 SCALING_FACTOR      equ 0x8
 FALSE               equ 0x00

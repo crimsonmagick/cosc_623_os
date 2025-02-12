@@ -1,11 +1,16 @@
 bits 16
 VGA_DISPLAY_WIDTH   equ 320
 SCALING_FACTOR      equ 0x8
+LOGO_START_X        equ (VGA_DISPLAY_WIDTH - (16 * SCALING_FACTOR)) / 2
+LOGO_START_Y        equ (200 - (9 * SCALING_FACTOR)) / 2 -40
 
 org 0x7e00
 animate_logo:
     push LOGO_START_X
     push LOGO_START_Y
+    call draw_logo
+    ret
+
 draw_logo:
     push bp
     mov bp, sp
