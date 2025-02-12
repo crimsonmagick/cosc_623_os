@@ -3,6 +3,9 @@ VGA_DISPLAY_WIDTH   equ 320
 SCALING_FACTOR      equ 0x8
 
 org 0x7e00
+animate_logo:
+    push LOGO_START_X
+    push LOGO_START_Y
 draw_logo:
     push bp
     mov bp, sp

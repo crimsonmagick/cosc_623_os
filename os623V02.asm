@@ -36,7 +36,7 @@ BITMAP_LENGTH       equ 18
 SHADE_COUNT         equ 9
 
 ; ext procedures
-draw_logo           equ 0x7e00
+animate_logo        equ 0x7e00
 
 %define CENTER_TXT(len) ((DISPLAY_WIDTH - len) / 2)
 %define CENTER_VGA_TXT(len) ((VGA_TXT_DISP_WIDTH - len) / 2)
@@ -97,9 +97,7 @@ start:
     push blockline                    ; Address of 3-tuple
     call draw_line
 
-    push LOGO_START_X
-    push LOGO_START_Y
-    call 0x7e00
+    call animate_logo
 
 
     ; Wait for key press
