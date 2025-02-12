@@ -35,19 +35,6 @@ ANYKEY_LENGTH       equ 28
 BITMAP_LENGTH       equ 18
 SHADE_COUNT         equ 9
 
-;data refs
-topline             equ 0x7e00
-bottomline          equ topline + 3
-blockline           equ bottomline + 3
-welbos              equ blockline + 3
-name                equ welbos + BOX_LENGTH
-anykey              equ name + BOX_LENGTH
-prompt_sym          equ anykey + ANYKEY_LENGTH
-w_bitmap            equ prompt_sym + 1
-red_shades          equ w_bitmap + BITMAP_LENGTH
-row_colors          equ red_shades + SHADE_COUNT
-
-
 %define CENTER_TXT(len) ((DISPLAY_WIDTH - len) / 2)
 %define CENTER_VGA_TXT(len) ((VGA_TXT_DISP_WIDTH - len) / 2)
 
@@ -355,8 +342,37 @@ print:
     pop bp                 ; Restore stack frame
     ret 10
 
+topline             db 0xC9
+                    db 0xCD
+                    db 0xBB
+bottomline          db 0xC8
+                    db 0xCD
+                    db 0xBC
+blockline           db 0xDE
+                    db 0xDC
+                    db 0xDD
+welbos              db 0xBA, `    WelbOS v01   `, 0xBA
+welboslen           equ ($ - welbos)
+name                db 0xBA, `   Welby Seely   `, 0xBA
+namelen             equ ($ - name)
+anykey              db "Press any key to continue..."
+anykeylen           equ ($ - anykey)
+prompt_sym          db "$"
+w_bitmap db 02h, 80h
+         db 02h, 80h
+         db 04h, 40h
+         db 04h, 40h
+         db 08h, 21h
+         db 88h, 22h
+         db 50h, 14h
+         db 50h, 14h
+         db 20h, 08h
+red_shades db 58, 55, 50, 45, 40, 35, 30, 25, 20; Bright to dark red
+; Row color table, from top to bottom row
+row_colors db 32, 33, 34, 35, 36, 37, 38, 39, 40  ; Use only custom red shades
 ; Pad to 512 bytes for an MBR:
 padding times 510 - ($ - $$) db 0
 
 ; Optional boot signature:
 bootSig db 0x55, 0xAA
+
