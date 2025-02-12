@@ -51,10 +51,9 @@ start:
     int BIOS_VIDEO
 
     call set_red_gradient_palette
-    ;    mov di, LOGO_START_Y * VGA_DISPLAY_WIDTH + LOGO_START_X
     push LOGO_START_X
     push LOGO_START_Y
-    call draw_logo
+    call 0x7e00
 
     push RED_BLACK
     push BOX_LENGTH
@@ -118,67 +117,6 @@ start:
     call print
 end:
     int 20h
-
-draw_logo:
-    push bp
-    mov bp, sp
-
-    mov ax, [bp + 4]
-    mov cx, VGA_DISPLAY_WIDTH
-    mul cx
-    add ax, [bp + 6]
-    mov di, ax
-
-    mov ax, 0xA000     ; memory mapped I/O segment for VGA
-    mov es, ax
-
-    mov di, LOGO_START_Y * VGA_DISPLAY_WIDTH + LOGO_START_X
-    mov si, w_bitmap   ; source bitmap start address
-
-    mov dx, 9                  ; logical row that we're calculating
-    push SCALING_FACTOR
-draw_rows:
-    mov bx, 9
-    sub bx, dx                 ; determine color for this row
-    mov bl, [row_colors + bx]  ; store row color in BL (or AL, but we’ll need AL soon)
-    mov ax, [si]               ; retrieve pixels for this row
-
-    ; Process 16 pixels
-    mov cx, 16
-draw_row:
-    shl ax, 1          ; Shift left (test MSB of AX)
-    jnc skip_column
-
-    push cx
-    push ax
-    mov cx, SCALING_FACTOR
-    mov al, bl
-    rep stosb
-    pop ax
-    pop cx
-    jmp next_column
-skip_column:
-    add di, SCALING_FACTOR
-next_column:
-    loop draw_row
-
-scale_vertically:
-    add di, 320 - 16 * SCALING_FACTOR ; Move to next VGA row
-    pop cx
-    dec cx
-    cmp cx, 0
-    jz next_source_row
-    push cx
-    jmp draw_rows
-next_source_row:
-    add si, 2
-    dec dx
-    jz logo_done
-    push SCALING_FACTOR
-    jmp draw_rows
-logo_done:
-    pop bp
-    ret 4
 
 draw_line:
     push bp
@@ -358,18 +296,7 @@ namelen             equ ($ - name)
 anykey              db "Press any key to continue..."
 anykeylen           equ ($ - anykey)
 prompt_sym          db "$"
-w_bitmap db 02h, 80h
-         db 02h, 80h
-         db 04h, 40h
-         db 04h, 40h
-         db 08h, 21h
-         db 88h, 22h
-         db 50h, 14h
-         db 50h, 14h
-         db 20h, 08h
 red_shades db 58, 55, 50, 45, 40, 35, 30, 25, 20; Bright to dark red
-; Row color table, from top to bottom row
-row_colors db 32, 33, 34, 35, 36, 37, 38, 39, 40  ; Use only custom red shades
 ; Pad to 512 bytes for an MBR:
 padding times 510 - ($ - $$) db 0
 
