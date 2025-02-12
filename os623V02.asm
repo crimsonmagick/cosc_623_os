@@ -35,6 +35,9 @@ ANYKEY_LENGTH       equ 28
 BITMAP_LENGTH       equ 18
 SHADE_COUNT         equ 9
 
+; ext procedures
+draw_logo           equ 0x7e00
+
 %define CENTER_TXT(len) ((DISPLAY_WIDTH - len) / 2)
 %define CENTER_VGA_TXT(len) ((VGA_TXT_DISP_WIDTH - len) / 2)
 
@@ -42,7 +45,7 @@ org 0x7c00
 jmp short start
 nop
 
-bsOEM       db "WelbOS v01"         ; OEM String
+bsOEM       db "WelbOS v02"         ; OEM String
 
 start:
     call load_sector
@@ -51,9 +54,6 @@ start:
     int BIOS_VIDEO
 
     call set_red_gradient_palette
-    push LOGO_START_X
-    push LOGO_START_Y
-    call 0x7e00
 
     push RED_BLACK
     push BOX_LENGTH
@@ -96,6 +96,11 @@ start:
     push LINE_ROW_ANYKEY + 2          ; Row
     push blockline                    ; Address of 3-tuple
     call draw_line
+
+    push LOGO_START_X
+    push LOGO_START_Y
+    call 0x7e00
+
 
     ; Wait for key press
     mov ah, 0x00
