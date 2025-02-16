@@ -25,16 +25,13 @@ RED_BLACK           equ 0x04
 YELLOW_BLACK        equ 0x0E
 LIGHT_RED           equ 0x0C
 
-SCALING_FACTOR      equ 0x8
-FALSE               equ 0x00
-
 BOX_LENGTH          equ 19
 ANYKEY_LENGTH       equ 28
 BITMAP_LENGTH       equ 18
 SHADE_COUNT         equ 9
 
 ; ext procedures
-animate_logo        equ 0x7e00
+;animate_logo        equ 0x0001:0x2345
 
 %define CENTER_TXT(len) ((DISPLAY_WIDTH - len) / 2)
 %define CENTER_VGA_TXT(len) ((VGA_TXT_DISP_WIDTH - len) / 2)
@@ -95,8 +92,7 @@ start:
     push blockline                    ; Address of 3-tuple
     call draw_line
 
-    call animate_logo
-
+    call 0x0001:0x2345
 
     ; Wait for key press
     mov ah, 0x00
@@ -232,15 +228,15 @@ clear_screen:
 ;   - BIOS interrupt 0x13, function 0x02.
 ; -----------------------------------------------------------------------------
 load_sector:
-	mov bx, 0x0000
-	mov es, bx
-	mov bx, 0x7e00
-	mov ah, READ_SECTORS
-	mov al, 1
-	mov ch, 1
-	mov cl, 2
-	mov dh, 0
-	mov dl, 0
+	mov bx, 0x0001              ; segment (can't move immediate into segment register)
+	mov es, bx                  ; segment
+	mov bx, 0x2345              ; offset
+	mov ah, READ_SECTORS        ; function
+	mov al, 1                   ; number of sectors to read
+	mov ch, 1                   ; cylinder number (10 bits, upper two bits are 6 and 7 of CL)
+	mov cl, 2                   ; sector number (and upper two of cylinder)
+	mov dh, 0                   ; head (usually same as side)
+	mov dl, 0                   ; driver number
 	int BIOS_FLOPPY
 	ret
 

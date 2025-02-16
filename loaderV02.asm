@@ -4,20 +4,14 @@ SCALING_FACTOR      equ 0x8
 LOGO_START_X        equ (VGA_DISPLAY_WIDTH - (16 * SCALING_FACTOR)) / 2
 LOGO_START_Y        equ (200 - (9 * SCALING_FACTOR)) / 2 -40
 
-org 0x7e00
+org 0x2345
 animate_logo:
-    call delay
+    push cs
+    pop ds
     push LOGO_START_X
     push LOGO_START_Y
     call draw_logo
-    ret
-
-delay:
-    mov ah, 0x86          ; BIOS wait function
-    mov cx, 0x002D        ; High word (45 = 3,000,000 / 65536)
-    mov dx, 0xC6C0        ; Low word (3,000,000 % 65536 = 50,880)
-    int 0x15              ; Call interrupt
-    ret
+    retf
 
 draw_logo:
     push bp
