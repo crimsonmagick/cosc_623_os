@@ -44,6 +44,10 @@ nop
 bsOEM       db "WelbOS v02"         ; OEM String
 
 start:
+    ; Inputs: cylinder, sector, head, segment, offset.
+    push 1
+    push 2
+    push 0
     push ANIMATE_LOGO_SEG
     push ANIMATE_LOGO_OFF
     call load_sector
@@ -223,7 +227,7 @@ clear_screen:
 ; -----------------------------------------------------------------------------
 ; Function: load_sector
 ; Description: Loads sector 37 into memory. TODO parameterize
-; Inputs: None.
+; Inputs: cylinder, sector, head, segment, offset.
 ; Outputs: None.
 ; Modifies:
 ;   - AX, BX, CX, DX, EX
@@ -239,14 +243,14 @@ load_sector:
 	mov bx, [bp + 4]            ; offset
 	mov ah, READ_SECTORS        ; function
 	mov al, 1                   ; number of sectors to read
-	mov ch, 1                   ; cylinder number (10 bits, upper two bits are 6 and 7 of CL)
-	mov cl, 2                   ; sector number (and upper two of cylinder)
-	mov dh, 0                   ; head (usually same as side)
+	mov ch, [bp + 12]           ; cylinder number (10 bits, upper two bits are 6 and 7 of CL)
+	mov cl, [bp + 10]           ; sector number (and upper two of cylinder)
+	mov dh, [bp + 8]            ; head (usually same as side)
 	mov dl, 0                   ; driver number
 	int BIOS_FLOPPY
 
 	pop bp
-	ret
+	ret 5
 
 ; -----------------------------------------------------------------------------
 ; Function: print
