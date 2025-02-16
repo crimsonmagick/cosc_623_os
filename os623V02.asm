@@ -44,6 +44,8 @@ nop
 bsOEM       db "WelbOS v02"         ; OEM String
 
 start:
+    push ANIMATE_LOGO_SEG
+    push ANIMATE_LOGO_OFF
     call load_sector
 
     mov ax, FUN_VIDEO_MODE + VGA_MODE
@@ -229,9 +231,12 @@ clear_screen:
 ;   - BIOS interrupt 0x13, function 0x02.
 ; -----------------------------------------------------------------------------
 load_sector:
-	mov bx, ANIMATE_LOGO_SEG              ; segment (can't move immediate into segment register)
+    push bp
+    mov bp, sp
+
+	mov bx, [bp + 6]            ; segment (can't move immediate into segment register)
 	mov es, bx                  ; segment
-	mov bx, ANIMATE_LOGO_OFF              ; offset
+	mov bx, [bp + 4]            ; offset
 	mov ah, READ_SECTORS        ; function
 	mov al, 1                   ; number of sectors to read
 	mov ch, 1                   ; cylinder number (10 bits, upper two bits are 6 and 7 of CL)
@@ -239,6 +244,8 @@ load_sector:
 	mov dh, 0                   ; head (usually same as side)
 	mov dl, 0                   ; driver number
 	int BIOS_FLOPPY
+
+	pop bp
 	ret
 
 ; -----------------------------------------------------------------------------
