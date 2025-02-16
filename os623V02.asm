@@ -31,7 +31,8 @@ BITMAP_LENGTH       equ 18
 SHADE_COUNT         equ 9
 
 ; ext procedures
-;animate_logo        equ 0x0001:0x2345
+ANIMATE_LOGO_SEG equ 0x0001
+ANIMATE_LOGO_OFF equ 0x2345
 
 %define CENTER_TXT(len) ((DISPLAY_WIDTH - len) / 2)
 %define CENTER_VGA_TXT(len) ((VGA_TXT_DISP_WIDTH - len) / 2)
@@ -60,8 +61,8 @@ start:
     push RED_BLACK
     push BOX_LENGTH - 1               ; Repeat count
     push CENTER_VGA_TXT(BOX_LENGTH)   ; Column
-    push LINE_ROW_TOP                ; Row
-    push topline                     ; Address of 3-tuple
+    push LINE_ROW_TOP                 ; Row
+    push topline                      ; Address of 3-tuple
     call draw_line
 
     push RED_BLACK
@@ -92,7 +93,7 @@ start:
     push blockline                    ; Address of 3-tuple
     call draw_line
 
-    call 0x0001:0x2345
+    call ANIMATE_LOGO_SEG:ANIMATE_LOGO_OFF
 
     ; Wait for key press
     mov ah, 0x00
@@ -228,9 +229,9 @@ clear_screen:
 ;   - BIOS interrupt 0x13, function 0x02.
 ; -----------------------------------------------------------------------------
 load_sector:
-	mov bx, 0x0001              ; segment (can't move immediate into segment register)
+	mov bx, ANIMATE_LOGO_SEG              ; segment (can't move immediate into segment register)
 	mov es, bx                  ; segment
-	mov bx, 0x2345              ; offset
+	mov bx, ANIMATE_LOGO_OFF              ; offset
 	mov ah, READ_SECTORS        ; function
 	mov al, 1                   ; number of sectors to read
 	mov ch, 1                   ; cylinder number (10 bits, upper two bits are 6 and 7 of CL)
