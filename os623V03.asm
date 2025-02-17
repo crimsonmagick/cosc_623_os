@@ -100,12 +100,12 @@ start:
     push CENTER_VGA_TXT(ANYKEY_LENGTH)
     call print
 
-    ;push WHITE_BLACK
-    ;push VGA_TXT_DISP_WIDTH - 1       ; Repeat count
-    ;push 0   ; Column
-    ;push LINE_ROW_ANYKEY + 2          ; Row
-    ;push blockline                    ; Address of 3-tuple
-    ;call draw_line
+    push WHITE_BLACK
+    push VGA_TXT_DISP_WIDTH - 1       ; Repeat count
+    push 0   ; Column
+    push LINE_ROW_ANYKEY + 4          ; Row
+    push blockline                    ; Address of 3-tuple
+    call draw_line
 
     call ANIMATE_LOGO_SEG:ANIMATE_LOGO_OFF
     call 0x0002:0x3456
