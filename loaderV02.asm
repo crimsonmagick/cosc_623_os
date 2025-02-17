@@ -6,11 +6,13 @@ LOGO_START_Y        equ (200 - (9 * SCALING_FACTOR)) / 2 -40
 
 org 0x2345
 animate_logo:
+    push ds
     push cs
     pop ds
     push LOGO_START_X
     push LOGO_START_Y
     call draw_logo
+    pop ds
     retf
 
 draw_logo:

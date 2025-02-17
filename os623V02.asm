@@ -52,9 +52,17 @@ start:
     push ANIMATE_LOGO_OFF
     call load_sector
 
+    push 1
+    push 5
+    push 0
+    push 0x0002
+    push 0x3456
+    call load_sector
+
+    call clear_screen
+
     mov ax, FUN_VIDEO_MODE + VGA_MODE
     int BIOS_VIDEO
-
     call set_red_gradient_palette
 
     push RED_BLACK
@@ -100,6 +108,34 @@ start:
     call draw_line
 
     call ANIMATE_LOGO_SEG:ANIMATE_LOGO_OFF
+    call 0x0002:0x3456
+
+    ; set segment to 2
+    push 2
+    pop ds
+
+    push ax ;save for second call
+
+    push RED_BLACK
+    push 10
+    push ax
+    push 0
+    push 0
+    call print
+
+    pop ax  ; restore
+
+    push RED_BLACK
+    push 8
+    add ax, 10
+    push ax
+    push 1
+    push 0
+    call print
+
+    ; restore segment
+    push 0
+    pop ds
 
     ; Wait for key press
     mov ah, 0x00
@@ -113,14 +149,7 @@ start:
 
     call set_cursor_pos
 
-    push MAGENTA_BLACK
-    push 1
-    push prompt_sym
-    push 0
-    push 0
-    call print
-end:
-    int 20h
+
 
 draw_line:
     push bp
@@ -260,6 +289,7 @@ load_sector:
 ;   - [sp+6] Row position to begin writing the string.
 ;   - [sp+8] Memory address location of the string.
 ;   - [sp+10] Length of the string.
+;   - [sp+12] Attribute.
 ; Outputs: None.
 ; Modifies:
 ;   - AX, BX, CX, DX
