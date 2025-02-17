@@ -41,7 +41,7 @@ org 0x7c00
 jmp short start
 nop
 
-bsOEM       db "WelbOS v02"         ; OEM String
+bsOEM       db "WelbOS v03"         ; OEM String
 
 start:
     ; Inputs: cylinder, sector, head, segment, offset.
@@ -100,12 +100,12 @@ start:
     push CENTER_VGA_TXT(ANYKEY_LENGTH)
     call print
 
-    push WHITE_BLACK
-    push VGA_TXT_DISP_WIDTH - 1       ; Repeat count
-    push 0   ; Column
-    push LINE_ROW_ANYKEY + 2          ; Row
-    push blockline                    ; Address of 3-tuple
-    call draw_line
+    ;push WHITE_BLACK
+    ;push VGA_TXT_DISP_WIDTH - 1       ; Repeat count
+    ;push 0   ; Column
+    ;push LINE_ROW_ANYKEY + 2          ; Row
+    ;push blockline                    ; Address of 3-tuple
+    ;call draw_line
 
     call ANIMATE_LOGO_SEG:ANIMATE_LOGO_OFF
     call 0x0002:0x3456
@@ -116,21 +116,21 @@ start:
 
     push ax ;save for second call
 
-    push RED_BLACK
+    push LIGHT_RED
     push 10
     push ax
-    push 0
-    push 0
+    push LINE_ROW_ANYKEY + 2
+    push CENTER_VGA_TXT(10)
     call print
 
     pop ax  ; restore
 
-    push RED_BLACK
+    push LIGHT_RED
     push 8
     add ax, 10
     push ax
-    push 1
-    push 0
+    push LINE_ROW_ANYKEY + 3
+    push CENTER_VGA_TXT(8)
     call print
 
     ; restore segment
@@ -146,6 +146,13 @@ start:
     int BIOS_VIDEO
 
     call clear_screen
+
+    push MAGENTA_BLACK
+    push 1
+    push prompt_sym
+    push 0
+    push 0
+    call print
 
     call set_cursor_pos
 
@@ -328,7 +335,7 @@ bottomline          db 0xC8
 blockline           db 0xDE
                     db 0xDC
                     db 0xDD
-welbos              db 0xBA, `    WelbOS v01   `, 0xBA
+welbos              db 0xBA, `    WelbOS v03   `, 0xBA
 welboslen           equ ($ - welbos)
 name                db 0xBA, `   Welby Seely   `, 0xBA
 namelen             equ ($ - name)
