@@ -262,7 +262,7 @@ clear_screen:
 
 ; -----------------------------------------------------------------------------
 ; Function: load_sector
-; Description: Loads sector 37 into memory. TODO parameterize
+; Description: Loads sector 37 into memory.
 ; Inputs: cylinder, sector, head, segment, offset.
 ; Outputs: None.
 ; Modifies:
