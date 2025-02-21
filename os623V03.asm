@@ -25,7 +25,9 @@ start:
     push 0
     push MAIN_SEG
     push MAIN_OFF
-    call 0x0:load_sector
+
+    push 0              ; or use 0x0:load_sector, whatever.
+    call load_sector
 
     jmp word MAIN_SEG:MAIN_OFF
 
@@ -69,7 +71,6 @@ print:
     retf 10
 
 times 0x100 - ($ - $$) db 0
-
 ; -----------------------------------------------------------------------------
 ; Function: load_sector
 ; Description: Loads sector 37 into memory.
@@ -97,6 +98,15 @@ load_sector:
 
 	pop bp
 	retf 10
+
+times 0x150 - ($ - $$) db 0
+set_cursor_pos:
+    mov ah, 0x02        ; BIOS function: set cursor position
+    mov bh, 0x00        ; Page number (0)
+    mov dh, 0x00        ; Row (0)
+    mov dl, 0x01        ; Column (1)
+    int BIOS_VIDEO
+    retf
 
 ; Pad to 512 bytes for an MBR:
 padding times 510 - ($ - $$) db 0

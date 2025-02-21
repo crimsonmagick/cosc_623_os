@@ -23,7 +23,6 @@ MAGENTA_BLACK       equ 0x0D
 WHITE_BLACK         equ 0x0F
 RED_BLACK           equ 0x04
 YELLOW_BLACK        equ 0x0E
-LIGHT_RED           equ 0x0C
 
 BOX_LENGTH          equ 19
 ANYKEY_LENGTH       equ 28
@@ -38,7 +37,13 @@ PRINT_SEGMENT       equ 0
 PRINT_OFFSET        equ 0x7c50
 
 LOAD_SECTOR_SEGMENT equ 0
-LOAD_SECTOR_OFFSET equ 0x7d00
+LOAD_SECTOR_OFFSET  equ 0x7d00
+
+SET_CURSOR_SEGMENT equ 0
+SET_CURSOR_OFFSET  equ 0x7d50
+
+DISPLAY_TIME_SEGMENT equ 0x0002
+DISPLAY_TIME_OFFSET  equ 0x3456
 
 %define CENTER_TXT(len) ((DISPLAY_WIDTH - len) / 2)
 %define CENTER_VGA_TXT(len) ((VGA_TXT_DISP_WIDTH - len) / 2)
@@ -52,8 +57,8 @@ main:
     push 1
     push 5
     push 0
-    push 0x0002
-    push 0x3456
+    push DISPLAY_TIME_SEGMENT
+    push DISPLAY_TIME_OFFSET
     call LOAD_SECTOR_SEGMENT:LOAD_SECTOR_OFFSET
 
     call clear_screen
@@ -109,34 +114,9 @@ main:
     push blockline                    ; Address of 3-tuple
     call draw_line
 
-;    ; set segment to 2
-;    push 2
-;    pop ds
-;
-;    push ax ;save for second call
-;
-;    push LIGHT_RED
-;    push 10
-;    push ax
-;    push LINE_ROW_ANYKEY + 2
-;    push CENTER_VGA_TXT(10)
-;    call PRINT_SEGMENT:PRINT_OFFSET
-;
-;    pop ax  ; restore
-;
-;    push LIGHT_RED
-;    push 8
-;    add ax, 10
-;    push ax
-;    push LINE_ROW_ANYKEY + 3
-;    push CENTER_VGA_TXT(8)
-;    call PRINT_SEGMENT:PRINT_OFFSET
-;
-;    ; restore segment
-;    push 0
-;    pop ds
-;
-;    ; Wait for key press
+    call DISPLAY_TIME_SEGMENT:DISPLAY_TIME_OFFSET
+
+    ; Wait for key press
     mov ah, 0x00
     int 0x16
 
@@ -153,10 +133,8 @@ main:
     push 0
     call PRINT_SEGMENT:PRINT_OFFSET
 
-    call set_cursor_pos
-
-    int 20h
-
+    call SET_CURSOR_SEGMENT:SET_CURSOR_OFFSET
+    hlt
 
 draw_logo:
     push bp
@@ -271,15 +249,6 @@ draw_line_right:
 
     pop bp
     ret 10
-
-
-set_cursor_pos:
-    mov ah, 0x02        ; BIOS function: set cursor position
-    mov bh, 0x00        ; Page number (0)
-    mov dh, 0x00        ; Row (0)
-    mov dl, 0x01        ; Column (1)
-    int BIOS_VIDEO
-    ret
 
 set_red_gradient_palette:
     mov dx, 0x3C8   ; VGA color index port

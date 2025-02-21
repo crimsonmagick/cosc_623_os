@@ -1,3 +1,16 @@
+PRINT_SEGMENT       equ 0
+PRINT_OFFSET        equ 0x7c50
+
+VGA_TXT_DISP_HEIGHT equ 25
+VGA_TXT_DISP_WIDTH  equ 40
+
+MESSAGE_ROW         equ VGA_TXT_DISP_HEIGHT / 2 + 3
+LINE_ROW_TOP        equ MESSAGE_ROW - 1
+LINE_ROW_NAME       equ MESSAGE_ROW + 1
+LINE_ROW_BOTTOM     equ LINE_ROW_NAME + 1
+LINE_ROW_ANYKEY     equ LINE_ROW_BOTTOM + 2
+LIGHT_RED           equ 0x0C
+
 %macro makedt 4
 	mov bh,%1 			;dh/dl/chcl
 	shr bh,4
@@ -8,6 +21,8 @@
 	add bh,30h
 	mov [%2 + %4],bh
 %endmacro
+
+%define CENTER_VGA_TXT(len) ((VGA_TXT_DISP_WIDTH - len) / 2)
 
 bit16
 org 0x3456
@@ -30,7 +45,21 @@ org 0x3456
 	makedt ch, tmfld, 0, 1  ; hours
 	makedt cl, tmfld, 3, 4  ; minutes
 	makedt dh, tmfld, 6, 7  ; seconds
-	lea ax, [dtfld]
+
+    push LIGHT_RED
+    push 10
+    push dtfld
+    push LINE_ROW_ANYKEY + 2
+    push CENTER_VGA_TXT(10)
+    call PRINT_SEGMENT:PRINT_OFFSET
+
+    push LIGHT_RED
+    push 8
+    push tmfld
+    push LINE_ROW_ANYKEY + 3
+    push CENTER_VGA_TXT(8)
+    call PRINT_SEGMENT:PRINT_OFFSET
+
 	pop ds
 	retf
 
