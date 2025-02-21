@@ -96,6 +96,52 @@ animate_logo:
     push blockline                    ; Address of 3-tuple
     call draw_line
 
+;    ; set segment to 2
+;    push 2
+;    pop ds
+;
+;    push ax ;save for second call
+;
+;    push LIGHT_RED
+;    push 10
+;    push ax
+;    push LINE_ROW_ANYKEY + 2
+;    push CENTER_VGA_TXT(10)
+;    call print
+;
+;    pop ax  ; restore
+;
+;    push LIGHT_RED
+;    push 8
+;    add ax, 10
+;    push ax
+;    push LINE_ROW_ANYKEY + 3
+;    push CENTER_VGA_TXT(8)
+;    call print
+;
+;    ; restore segment
+;    push 0
+;    pop ds
+;
+;    ; Wait for key press
+;    mov ah, 0x00
+;    int 0x16
+;
+;    ; Switch back to text mode (80x25)
+;    mov ax, 0x0003
+;    int BIOS_VIDEO
+;
+;    call clear_screen
+;
+;    push MAGENTA_BLACK
+;    push 1
+;    push prompt_sym
+;    push 0
+;    push 0
+;    call print
+;
+;    call set_cursor_pos
+
     int 20h
 
 draw_logo:
