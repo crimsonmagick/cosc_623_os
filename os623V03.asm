@@ -5,7 +5,7 @@ DISPLAY_FUN         equ 0x13
 BIOS_FLOPPY         equ 0x0013
 READ_SECTORS        equ 0x0002
 
-; ext procedures
+; ext code
 MAIN_SEG equ 0x0001
 MAIN_OFF equ 0x2345
 
