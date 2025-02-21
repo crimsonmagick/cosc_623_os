@@ -31,8 +31,8 @@ BITMAP_LENGTH       equ 18
 SHADE_COUNT         equ 9
 
 ; ext procedures
-ANIMATE_LOGO_SEG equ 0x0001
-ANIMATE_LOGO_OFF equ 0x2345
+MAIN_SEG equ 0x0001
+MAIN_OFF equ 0x2345
 
 %define CENTER_TXT(len) ((DISPLAY_WIDTH - len) / 2)
 %define CENTER_VGA_TXT(len) ((VGA_TXT_DISP_WIDTH - len) / 2)
@@ -48,66 +48,20 @@ start:
     push 1
     push 2
     push 0
-    push ANIMATE_LOGO_SEG
-    push ANIMATE_LOGO_OFF
+    push MAIN_SEG
+    push MAIN_OFF
     call load_sector
 
-    push 1
-    push 5
-    push 0
-    push 0x0002
-    push 0x3456
-    call load_sector
+;    push 1
+;    push 5
+;    push 0
+;    push 0x0002
+;    push 0x3456
+;    call load_sector
+    jmp word MAIN_SEG:MAIN_OFF
 
-    call clear_screen
 
-    mov ax, FUN_VIDEO_MODE + VGA_MODE
-    int BIOS_VIDEO
-    call set_red_gradient_palette
-
-    push RED_BLACK
-    push BOX_LENGTH
-    push welbos
-    push MESSAGE_ROW
-    push CENTER_VGA_TXT(BOX_LENGTH)
-    call print
-
-    push RED_BLACK
-    push BOX_LENGTH - 1               ; Repeat count
-    push CENTER_VGA_TXT(BOX_LENGTH)   ; Column
-    push LINE_ROW_TOP                 ; Row
-    push topline                      ; Address of 3-tuple
-    call draw_line
-
-    push RED_BLACK
-    push BOX_LENGTH
-    push name
-    push LINE_ROW_NAME
-    push CENTER_VGA_TXT(BOX_LENGTH)
-    call print
-
-    push RED_BLACK
-    push BOX_LENGTH - 1       ; Repeat count
-    push CENTER_VGA_TXT(BOX_LENGTH)   ; Column
-    push LINE_ROW_BOTTOM     ; Row
-    push bottomline             ; Address of 3-tuple
-    call draw_line
-
-    push YELLOW_BLACK
-    push ANYKEY_LENGTH
-    push anykey
-    push LINE_ROW_ANYKEY
-    push CENTER_VGA_TXT(ANYKEY_LENGTH)
-    call print
-
-    ;push WHITE_BLACK
-    ;push VGA_TXT_DISP_WIDTH - 1       ; Repeat count
-    ;push 0   ; Column
-    ;push LINE_ROW_ANYKEY + 2          ; Row
-    ;push blockline                    ; Address of 3-tuple
-    ;call draw_line
-
-    call ANIMATE_LOGO_SEG:ANIMATE_LOGO_OFF
+    call MAIN_SEG:MAIN_OFF
     call 0x0002:0x3456
 
     ; set segment to 2
