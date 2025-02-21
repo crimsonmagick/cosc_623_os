@@ -34,14 +34,27 @@ SCALING_FACTOR      equ 0x8
 LOGO_START_X        equ (VGA_DISPLAY_WIDTH - (16 * SCALING_FACTOR)) / 2
 LOGO_START_Y        equ (200 - (9 * SCALING_FACTOR)) / 2 -40
 
+PRINT_SEGMENT       equ 0
+PRINT_OFFSET        equ 0x7c50
+
+LOAD_SECTOR_SEGMENT equ 0
+LOAD_SECTOR_OFFSET equ 0x7d00
+
 %define CENTER_TXT(len) ((DISPLAY_WIDTH - len) / 2)
 %define CENTER_VGA_TXT(len) ((VGA_TXT_DISP_WIDTH - len) / 2)
 
 org 0x2345
-animate_logo:
+main:
 
     push cs
     pop ds
+
+    push 1
+    push 5
+    push 0
+    push 0x0002
+    push 0x3456
+    call LOAD_SECTOR_SEGMENT:LOAD_SECTOR_OFFSET
 
     call clear_screen
 
@@ -59,7 +72,7 @@ animate_logo:
     push welbos
     push MESSAGE_ROW
     push CENTER_VGA_TXT(BOX_LENGTH)
-    call print
+    call PRINT_SEGMENT:PRINT_OFFSET
 
     push RED_BLACK
     push BOX_LENGTH - 1               ; Repeat count
@@ -73,7 +86,7 @@ animate_logo:
     push name
     push LINE_ROW_NAME
     push CENTER_VGA_TXT(BOX_LENGTH)
-    call print
+    call PRINT_SEGMENT:PRINT_OFFSET
 
     push RED_BLACK
     push BOX_LENGTH - 1       ; Repeat count
@@ -82,17 +95,17 @@ animate_logo:
     push bottomline             ; Address of 3-tuple
     call draw_line
 
-   ; push YELLOW_BLACK
-   ; push ANYKEY_LENGTH
-   ; push anykey
-   ; push LINE_ROW_ANYKEY
-   ; push CENTER_VGA_TXT(ANYKEY_LENGTH)
-   ; call print
+    push YELLOW_BLACK
+    push ANYKEY_LENGTH
+    push anykey
+    push LINE_ROW_ANYKEY
+    push CENTER_VGA_TXT(ANYKEY_LENGTH)
+    call PRINT_SEGMENT:PRINT_OFFSET
 
     push WHITE_BLACK
     push VGA_TXT_DISP_WIDTH - 1       ; Repeat count
     push 0   ; Column
-    push LINE_ROW_ANYKEY + 2          ; Row
+    push LINE_ROW_ANYKEY + 4          ; Row
     push blockline                    ; Address of 3-tuple
     call draw_line
 
@@ -107,7 +120,7 @@ animate_logo:
 ;    push ax
 ;    push LINE_ROW_ANYKEY + 2
 ;    push CENTER_VGA_TXT(10)
-;    call print
+;    call PRINT_SEGMENT:PRINT_OFFSET
 ;
 ;    pop ax  ; restore
 ;
@@ -117,32 +130,33 @@ animate_logo:
 ;    push ax
 ;    push LINE_ROW_ANYKEY + 3
 ;    push CENTER_VGA_TXT(8)
-;    call print
+;    call PRINT_SEGMENT:PRINT_OFFSET
 ;
 ;    ; restore segment
 ;    push 0
 ;    pop ds
 ;
 ;    ; Wait for key press
-;    mov ah, 0x00
-;    int 0x16
-;
-;    ; Switch back to text mode (80x25)
-;    mov ax, 0x0003
-;    int BIOS_VIDEO
-;
-;    call clear_screen
-;
-;    push MAGENTA_BLACK
-;    push 1
-;    push prompt_sym
-;    push 0
-;    push 0
-;    call print
-;
-;    call set_cursor_pos
+    mov ah, 0x00
+    int 0x16
+
+    ; Switch back to text mode (80x25)
+    mov ax, 0x0003
+    int BIOS_VIDEO
+
+    call clear_screen
+
+    push MAGENTA_BLACK
+    push 1
+    push prompt_sym
+    push 0
+    push 0
+    call PRINT_SEGMENT:PRINT_OFFSET
+
+    call set_cursor_pos
 
     int 20h
+
 
 draw_logo:
     push bp
@@ -217,7 +231,7 @@ draw_line:
     push si
     mov si, [bp + 8]
     push si
-    call print
+    call PRINT_SEGMENT:PRINT_OFFSET
 
     ; set up middle loop
     mov ax, 1                           ; break when == to cx
@@ -237,7 +251,7 @@ draw_line_middle:
     mov si, [bp + 8]
     add si, ax
     push si
-    call print
+    call PRINT_SEGMENT:PRINT_OFFSET
 
     pop ax
     inc ax
@@ -253,7 +267,7 @@ draw_line_right:
     push si
     add ax, [bp + 8]                    ; rightmostposition
     push ax
-    call print
+    call PRINT_SEGMENT:PRINT_OFFSET
 
     pop bp
     ret 10
@@ -305,72 +319,6 @@ clear_screen:
     mov dl, 79              ; Lower-right column
     int BIOS_VIDEO          ; BIOS video interrupt
     ret
-
-; -----------------------------------------------------------------------------
-; Function: load_sector
-; Description: Loads sector 37 into memory.
-; Inputs: cylinder, sector, head, segment, offset.
-; Outputs: None.
-; Modifies:
-;   - AX, BX, CX, DX, EX
-; Calls:
-;   - BIOS interrupt 0x13, function 0x02.
-; -----------------------------------------------------------------------------
-load_sector:
-    push bp
-    mov bp, sp
-
-	mov bx, [bp + 6]            ; segment (can't move immediate into segment register)
-	mov es, bx                  ; segment
-	mov bx, [bp + 4]            ; offset
-	mov ah, READ_SECTORS        ; function
-	mov al, 1                   ; number of sectors to read
-	mov ch, [bp + 12]           ; cylinder number (10 bits, upper two bits are 6 and 7 of CL)
-	mov cl, [bp + 10]           ; sector number (and upper two of cylinder)
-	mov dh, [bp + 8]            ; head (usually same as side)
-	mov dl, 0                   ; driver number
-	int BIOS_FLOPPY
-
-	pop bp
-	ret 5
-
-; -----------------------------------------------------------------------------
-; Function: print
-; Description: Prints a string to the console.
-; Inputs:
-;   - [sp+4] Column position to begin writing the string.
-;   - [sp+6] Row position to begin writing the string.
-;   - [sp+8] Memory address location of the string.
-;   - [sp+10] Length of the string.
-;   - [sp+12] Attribute.
-; Outputs: None.
-; Modifies:
-;   - AX, BX, CX, DX
-; Calls:
-;   - BIOS interrupt 0x10, function 0x13.
-; -----------------------------------------------------------------------------
-print:
-    push bp ; save bp for the return
-    mov  bp, sp ; update bp to create a new "stack frame"
-
-    mov bl, [bp+12]        ; Attribute (lightgreen on black)
-    mov cx, [bp+10]        ; length of the string
-    mov si, [bp+8]         ; address of the string
-    mov dh, [bp+6]         ; row position
-    mov dl, [bp+4]         ; column position
-
-    ; We need ES:BP provides the pointer to the string - load the data segment (DS) base into ES
-    push ds
-    pop es
-
-    mov  ah, DISPLAY_FUN    ; BIOS display string (function 13h)
-    mov  al, 0              ; Write mode = 1 (cursor stays after last char
-    mov  bh, 0              ; Video page
-    mov  bp, si             ; Put offset in BP (ES:BP points to the string)
-    int  BIOS_VIDEO
-
-    pop bp                 ; Restore stack frame
-    ret 10
 
 topline             db 0xC9
                     db 0xCD

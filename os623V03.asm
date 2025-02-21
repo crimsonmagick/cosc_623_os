@@ -2,33 +2,8 @@ bits 16
 BIOS_VIDEO          equ 0x10
 DISPLAY_FUN         equ 0x13
 
-FUN_VIDEO_MODE      equ 0x0000
-VGA_MODE            equ 0x0013
-
 BIOS_FLOPPY         equ 0x0013
 READ_SECTORS        equ 0x0002
-
-VGA_DISPLAY_WIDTH   equ 320
-DISPLAY_WIDTH       equ 80
-DISPLAY_HEIGHT      equ 25
-VGA_TXT_DISP_WIDTH  equ 40
-VGA_TXT_DISP_HEIGHT equ 25
-MESSAGE_ROW         equ VGA_TXT_DISP_HEIGHT / 2 + 3
-LINE_ROW_TOP        equ MESSAGE_ROW - 1
-LINE_ROW_NAME       equ MESSAGE_ROW + 1
-LINE_ROW_BOTTOM     equ LINE_ROW_NAME + 1
-LINE_ROW_ANYKEY     equ LINE_ROW_BOTTOM + 2
-TEXT_MODE           equ 0x03
-MAGENTA_BLACK       equ 0x0D
-WHITE_BLACK         equ 0x0F
-RED_BLACK           equ 0x04
-YELLOW_BLACK        equ 0x0E
-LIGHT_RED           equ 0x0C
-
-BOX_LENGTH          equ 19
-ANYKEY_LENGTH       equ 28
-BITMAP_LENGTH       equ 18
-SHADE_COUNT         equ 9
 
 ; ext procedures
 MAIN_SEG equ 0x0001
@@ -50,150 +25,11 @@ start:
     push 0
     push MAIN_SEG
     push MAIN_OFF
-    call load_sector
+    call 0x0:load_sector
 
-;    push 1
-;    push 5
-;    push 0
-;    push 0x0002
-;    push 0x3456
-;    call load_sector
     jmp word MAIN_SEG:MAIN_OFF
 
-
-
-
-
-draw_line:
-    push bp
-    mov bp, sp
-
-    ;left edge
-    push word [bp + 12]
-    push 1
-    mov si, [bp + 4]
-    push si
-    mov si, [bp + 6]
-    push si
-    mov si, [bp + 8]
-    push si
-    call print
-
-    ; set up middle loop
-    mov ax, 1                           ; break when == to cx
-draw_line_middle:
-    mov cx, [bp + 10]
-    cmp ax, cx
-    je draw_line_right
-    push ax
-
-    push word [bp + 12]
-    push 1
-    mov si, [bp + 4]
-    inc si
-    push si
-    mov si, [bp + 6]
-    push si
-    mov si, [bp + 8]
-    add si, ax
-    push si
-    call print
-
-    pop ax
-    inc ax
-    jmp draw_line_middle
-
-draw_line_right:
-    push word [bp + 12]
-    push 1
-    mov si, [bp + 4]
-    add si, 2
-    push si
-    mov si, [bp + 6]
-    push si
-    add ax, [bp + 8]                    ; rightmostposition
-    push ax
-    call print
-
-    pop bp
-    ret 10
-
-
-set_cursor_pos:
-    mov ah, 0x02        ; BIOS function: set cursor position
-    mov bh, 0x00        ; Page number (0)
-    mov dh, 0x00        ; Row (0)
-    mov dl, 0x01        ; Column (1)
-    int BIOS_VIDEO
-    ret
-
-set_red_gradient_palette:
-    mov dx, 0x3C8   ; VGA color index port
-    mov al, 32      ; Start setting colors from index 32
-    out dx, al
-    inc dx          ; Now dx = 0x3C9 (RGB color data port)
-
-    mov cx, 9       ; 9 shades for 9 rows
-    mov si, red_shades
-next_color:
-    mov al, [si]    ; Load Red intensity
-    out dx, al      ; Set Red value
-    xor al, al      ; Set Green=0
-    out dx, al
-    out dx, al      ; Set Blue=0
-    inc si
-    loop next_color
-    ret
-
-; -----------------------------------------------------------------------------
-; Function: clear_screen
-; Description: Clears and resets the screen.
-; Inputs: None.
-; Outputs: None.
-; Modifies:
-;   - AX, BX, CX, DX
-; Calls:
-;   - BIOS interrupt 0x10, function 0x06.
-; -----------------------------------------------------------------------------
-clear_screen:
-    mov ah, 0x06            ; BIOS scroll (function 06h)
-    mov al, 0               ; Scroll all lines
-    mov bh, WHITE_BLACK         ; Attribute
-    mov ch, 0               ; Upper-left row
-    mov cl, 0               ; Upper-left column
-    mov dh, 24              ; Lower-right row
-    mov dl, 79              ; Lower-right column
-    int BIOS_VIDEO          ; BIOS video interrupt
-    ret
-
-; -----------------------------------------------------------------------------
-; Function: load_sector
-; Description: Loads sector 37 into memory.
-; Inputs: cylinder, sector, head, segment, offset.
-; Outputs: None.
-; Modifies:
-;   - AX, BX, CX, DX, EX
-; Calls:
-;   - BIOS interrupt 0x13, function 0x02.
-; -----------------------------------------------------------------------------
-load_sector:
-    push bp
-    mov bp, sp
-
-	mov bx, [bp + 6]            ; segment (can't move immediate into segment register)
-	mov es, bx                  ; segment
-	mov bx, [bp + 4]            ; offset
-	mov ah, READ_SECTORS        ; function
-	mov al, 1                   ; number of sectors to read
-	mov ch, [bp + 12]           ; cylinder number (10 bits, upper two bits are 6 and 7 of CL)
-	mov cl, [bp + 10]           ; sector number (and upper two of cylinder)
-	mov dh, [bp + 8]            ; head (usually same as side)
-	mov dl, 0                   ; driver number
-	int BIOS_FLOPPY
-
-	pop bp
-	ret 5
-
+times 0x50 - ($ - $$) db 0
 ; -----------------------------------------------------------------------------
 ; Function: print
 ; Description: Prints a string to the console.
@@ -213,11 +49,11 @@ print:
     push bp ; save bp for the return
     mov  bp, sp ; update bp to create a new "stack frame"
 
-    mov bl, [bp+12]        ; Attribute (lightgreen on black)
-    mov cx, [bp+10]        ; length of the string
-    mov si, [bp+8]         ; address of the string
-    mov dh, [bp+6]         ; row position
-    mov dl, [bp+4]         ; column position
+    mov bl, [bp+14]        ; Attribute (lightgreen on black)
+    mov cx, [bp+12]        ; length of the string
+    mov si, [bp+10]         ; address of the string
+    mov dh, [bp+8]         ; row position
+    mov dl, [bp+6]         ; column position
 
     ; We need ES:BP provides the pointer to the string - load the data segment (DS) base into ES
     push ds
@@ -230,25 +66,38 @@ print:
     int  BIOS_VIDEO
 
     pop bp                 ; Restore stack frame
-    ret 10
+    retf 10
 
-topline             db 0xC9
-                    db 0xCD
-                    db 0xBB
-bottomline          db 0xC8
-                    db 0xCD
-                    db 0xBC
-blockline           db 0xDE
-                    db 0xDC
-                    db 0xDD
-welbos              db 0xBA, `    WelbOS v03   `, 0xBA
-welboslen           equ ($ - welbos)
-name                db 0xBA, `   Welby Seely   `, 0xBA
-namelen             equ ($ - name)
-anykey              db "Press any key to continue..."
-anykeylen           equ ($ - anykey)
-prompt_sym          db "$"
-red_shades db 58, 55, 50, 45, 40, 35, 30, 25, 20; Bright to dark red
+times 0x100 - ($ - $$) db 0
+
+; -----------------------------------------------------------------------------
+; Function: load_sector
+; Description: Loads sector 37 into memory.
+; Inputs: cylinder, sector, head, segment, offset.
+; Outputs: None.
+; Modifies:
+;   - AX, BX, CX, DX, EX
+; Calls:
+;   - BIOS interrupt 0x13, function 0x02.
+; -----------------------------------------------------------------------------
+load_sector:
+    push bp
+    mov bp, sp
+
+	mov bx, [bp + 8]            ; segment (can't move immediate into segment register)
+	mov es, bx                  ; segment
+	mov bx, [bp + 6]            ; offset
+	mov ah, READ_SECTORS        ; function
+	mov al, 1                   ; number of sectors to read
+	mov ch, [bp + 14]           ; cylinder number (10 bits, upper two bits are 6 and 7 of CL)
+	mov cl, [bp + 12]           ; sector number (and upper two of cylinder)
+	mov dh, [bp + 10]            ; head (usually same as side)
+	mov dl, 0                   ; driver number
+	int BIOS_FLOPPY
+
+	pop bp
+	retf 10
+
 ; Pad to 512 bytes for an MBR:
 padding times 510 - ($ - $$) db 0
 
