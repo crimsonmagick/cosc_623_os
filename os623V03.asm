@@ -9,9 +9,6 @@ READ_SECTORS        equ 0x0002
 MAIN_SEG equ 0x0001
 MAIN_OFF equ 0x2345
 
-%define CENTER_TXT(len) ((DISPLAY_WIDTH - len) / 2)
-%define CENTER_VGA_TXT(len) ((VGA_TXT_DISP_WIDTH - len) / 2)
-
 org 0x7c00
 jmp short start
 nop
@@ -26,7 +23,7 @@ start:
     push MAIN_SEG
     push MAIN_OFF
 
-    push 0              ; or use 0x0:load_sector, whatever.
+    push 0              ; or use call 0x0:load_sector, whatever.
     call load_sector
 
     jmp word MAIN_SEG:MAIN_OFF
