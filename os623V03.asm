@@ -29,6 +29,7 @@ start:
     jmp word MAIN_SEG:MAIN_OFF
 
 times 0x50 - ($ - $$) db 0
+
 ; -----------------------------------------------------------------------------
 ; Function: print
 ; Description: Prints a string to the console.
@@ -68,11 +69,13 @@ print:
     retf 10
 
 times 0x100 - ($ - $$) db 0
+
 ; -----------------------------------------------------------------------------
 ; Function: load_sector
-; Description: Loads sector 37 into memory.
+; Description: Loads a sector into memory
 ; Inputs: cylinder, sector, head, segment, offset.
-; Outputs: None.
+; Outputs: 512 bytes into memory as specified by segment and offset.
+; Note: Does not currently take into account all 10 bits of the cylinder.
 ; Modifies:
 ;   - AX, BX, CX, DX, EX
 ; Calls:
@@ -82,19 +85,19 @@ load_sector:
     push bp
     mov bp, sp
 
-	mov bx, [bp + 8]            ; segment (can't move immediate into segment register)
-	mov es, bx                  ; segment
-	mov bx, [bp + 6]            ; offset
-	mov ah, READ_SECTORS        ; function
-	mov al, 1                   ; number of sectors to read
-	mov ch, [bp + 14]           ; cylinder number (10 bits, upper two bits are 6 and 7 of CL)
-	mov cl, [bp + 12]           ; sector number (and upper two of cylinder)
-	mov dh, [bp + 10]            ; head (usually same as side)
-	mov dl, 0                   ; driver number
-	int BIOS_FLOPPY
+    mov bx, [bp + 8]            ; segment (can't move immediate into segment register)
+    mov es, bx                  ; segment
+    mov bx, [bp + 6]            ; offset
+    mov ah, READ_SECTORS        ; function
+    mov al, 1                   ; number of sectors to read
+    mov ch, [bp + 14]           ; cylinder number (10 bits, upper two bits are 6 and 7 of CL)
+    mov cl, [bp + 12]           ; sector number (and upper two of cylinder)
+    mov dh, [bp + 10]           ; head (usually same as side)
+    mov dl, 0                   ; drive number
+    int BIOS_FLOPPY
 
-	pop bp
-	retf 10
+    pop bp
+    retf 10
 
 times 0x150 - ($ - $$) db 0
 set_cursor_pos:
