@@ -32,16 +32,31 @@ start:
     call MAIN_SEG:MAIN_OFF
 
     push 0
-    push 1
+    push 2
     push 0
     push 0x0001
     push 0x7890
 
     call 0x:load_sector
 
+    mov bl, 0x07           ; Attribute
+    mov cx, 37              ; length of the string
+    mov si, 0x7890         ; address of the string
+    mov dh, 0         ; row position
+    mov dl, 0         ; column position
+
+    mov ax, 0x01
+    mov es, ax
+
+    mov  ah, DISPLAY_FUN    ; BIOS display string (function 13h)
+    mov  al, 0              ; Write mode = 1 (cursor stays after last char
+    mov  bh, 0              ; Video page
+    mov  bp, si             ; Put offset in BP (ES:BP points to the string)
+    int  BIOS_VIDEO
+
     jmp $
 
-times 0x50 - ($ - $$) db 0
+times 0x70 - ($ - $$) db 0
 
 ; -----------------------------------------------------------------------------
 ; Function: print

@@ -37,7 +37,7 @@ CLEAR_SEGMENT       equ 0
 CLEAR_OFFSET        equ 0x7d60
 
 PRINT_SEGMENT       equ 0
-PRINT_OFFSET        equ 0x7c50
+PRINT_OFFSET        equ 0x7c70
 
 LOAD_SECTOR_SEGMENT equ 0
 LOAD_SECTOR_OFFSET  equ 0x7d00
