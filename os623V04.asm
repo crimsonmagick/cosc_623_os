@@ -46,26 +46,37 @@ times 0x50 - ($ - $$) db 0
 ;   - BIOS interrupt 0x10, function 0x13.
 ; -----------------------------------------------------------------------------
 print:
-    push bp ; save bp for the return
-    mov  bp, sp ; update bp to create a new "stack frame"
+    push bp
+    mov bp, sp
 
-    mov bl, [bp+14]        ; Attribute (lightgreen on black)
-    mov cx, [bp+12]        ; length of the string
-    mov si, [bp+10]         ; address of the string
-    mov dh, [bp+8]         ; row position
-    mov dl, [bp+6]         ; column position
+    ; Set ES to VGA text buffer segment (0xB800)
+    mov ax, 0xB800
+    mov es, ax
 
-    ; We need ES:BP provides the pointer to the string - load the data segment (DS) base into ES
-    push ds
-    pop es
+    ; Calculate screen offset: (row * 80 + column) * 2
+    xor ax, ax
+    mov al, [bp+8]       ; Load row from stack (byte)
+    mov bx, 80           ; 80 columns per row
+    mul bx               ; AX = row * 80
+    xor dx, dx
+    mov dl, [bp+6]       ; Load column from stack (byte)
+    add ax, dx           ; AX = (row * 80) + column
+    shl ax, 1            ; Multiply by 2 (each char = 2 bytes)
+    mov di, ax           ; ES:DI now points to VGA memory location
 
-    mov  ah, DISPLAY_FUN    ; BIOS display string (function 13h)
-    mov  al, 0              ; Write mode = 1 (cursor stays after last char
-    mov  bh, 0              ; Video page
-    mov  bp, si             ; Put offset in BP (ES:BP points to the string)
-    int  BIOS_VIDEO
+    ; Set up string parameters
+    mov si, [bp+10]      ; String address
+    mov cx, [bp+12]      ; String length
+    mov ah, [bp+14]      ; Attribute byte (foreground/background)
 
-    pop bp                 ; Restore stack frame
+    ; Write string to VGA memory
+    cld                  ; Ensure forward direction
+.write_loop:
+    lodsb                ; Load next character from DS:SI into AL
+    stosw                ; Store AX (char + attribute) at ES:DI
+    loop .write_loop
+
+    pop bp
     retf 10
 
 times 0x100 - ($ - $$) db 0
@@ -108,45 +119,6 @@ set_cursor_pos:
     mov dl, 0x01        ; Column (1)
     int BIOS_VIDEO
     retf
-
-times 0x160 - ($ - $$) db 0
-; -----------------------------------------------------------------------------
-; Function: print
-; Description: Prints a string to the console.
-; Inputs:
-;   - [sp+4] Column position to begin writing the string.
-;   - [sp+6] Row position to begin writing the string.
-;   - [sp+8] Memory address location of the string.
-;   - [sp+10] Length of the string.
-;   - [sp+12] Attribute.
-; Outputs: None.
-; Modifies:
-;   - AX, BX, CX, DX
-; Calls:
-;   - BIOS interrupt 0x10, function 0x13.
-; -----------------------------------------------------------------------------
-print_vga:
-    push bp ; save bp for the return
-    mov  bp, sp ; update bp to create a new "stack frame"
-
-    mov bl, [bp+14]        ; Attribute (lightgreen on black)
-    mov cx, [bp+12]        ; length of the string
-    mov si, [bp+10]         ; address of the string
-    mov dh, [bp+8]         ; row position
-    mov dl, [bp+6]         ; column position
-
-    ; We need ES:BP provides the pointer to the string - load the data segment (DS) base into ES
-    push ds
-    pop es
-
-    mov  ah, DISPLAY_FUN    ; BIOS display string (function 13h)
-    mov  al, 0              ; Write mode = 1 (cursor stays after last char
-    mov  bh, 0              ; Video page
-    mov  bp, si             ; Put offset in BP (ES:BP points to the string)
-    int  BIOS_VIDEO
-
-    pop bp                 ; Restore stack frame
-    retf 10
 
 ; Pad to 512 bytes for an MBR:
 padding times 510 - ($ - $$) db 0
