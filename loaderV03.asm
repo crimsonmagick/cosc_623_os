@@ -35,6 +35,7 @@ LOGO_START_Y        equ (200 - (9 * SCALING_FACTOR)) / 2 -40
 
 PRINT_SEGMENT       equ 0
 PRINT_OFFSET        equ 0x7c50
+PRINT_VGA_OFFSET    equ 0x7d60
 
 LOAD_SECTOR_SEGMENT equ 0
 LOAD_SECTOR_OFFSET  equ 0x7d00
@@ -77,7 +78,7 @@ main:
     push welbos
     push MESSAGE_ROW
     push CENTER_VGA_TXT(BOX_LENGTH)
-    call PRINT_SEGMENT:PRINT_OFFSET
+    call PRINT_SEGMENT:PRINT_VGA_OFFSET
 
     push RED_BLACK
     push BOX_LENGTH - 1               ; Repeat count
@@ -91,7 +92,7 @@ main:
     push name
     push LINE_ROW_NAME
     push CENTER_VGA_TXT(BOX_LENGTH)
-    call PRINT_SEGMENT:PRINT_OFFSET
+    call PRINT_SEGMENT:PRINT_VGA_OFFSET
 
     push RED_BLACK
     push BOX_LENGTH - 1       ; Repeat count
@@ -105,7 +106,7 @@ main:
     push anykey
     push LINE_ROW_ANYKEY
     push CENTER_VGA_TXT(ANYKEY_LENGTH)
-    call PRINT_SEGMENT:PRINT_OFFSET
+    call PRINT_SEGMENT:PRINT_VGA_OFFSET
 
     push WHITE_BLACK
     push VGA_TXT_DISP_WIDTH - 1       ; Repeat count
@@ -131,7 +132,7 @@ main:
     push prompt_sym
     push 0
     push 0
-    call PRINT_SEGMENT:PRINT_OFFSET
+    call PRINT_SEGMENT:PRINT_VGA_OFFSET
 
     call SET_CURSOR_SEGMENT:SET_CURSOR_OFFSET
     hlt
@@ -209,7 +210,7 @@ draw_line:
     push si
     mov si, [bp + 8]
     push si
-    call PRINT_SEGMENT:PRINT_OFFSET
+    call PRINT_SEGMENT:PRINT_VGA_OFFSET
 
     ; set up middle loop
     mov ax, 1                           ; break when == to cx
@@ -229,7 +230,7 @@ draw_line_middle:
     mov si, [bp + 8]
     add si, ax
     push si
-    call PRINT_SEGMENT:PRINT_OFFSET
+    call PRINT_SEGMENT:PRINT_VGA_OFFSET
 
     pop ax
     inc ax
@@ -245,7 +246,7 @@ draw_line_right:
     push si
     add ax, [bp + 8]                    ; rightmostposition
     push ax
-    call PRINT_SEGMENT:PRINT_OFFSET
+    call PRINT_SEGMENT:PRINT_VGA_OFFSET
 
     pop bp
     ret 10
