@@ -33,6 +33,9 @@ SCALING_FACTOR      equ 0x8
 LOGO_START_X        equ (VGA_DISPLAY_WIDTH - (16 * SCALING_FACTOR)) / 2
 LOGO_START_Y        equ (200 - (9 * SCALING_FACTOR)) / 2 -40
 
+CLEAR_SEGMENT       equ 0
+CLEAR_OFFSET        equ 0x7d60
+
 PRINT_SEGMENT       equ 0
 PRINT_OFFSET        equ 0x7c50
 
@@ -60,8 +63,6 @@ main:
     push DISPLAY_TIME_SEGMENT
     push DISPLAY_TIME_OFFSET
     call LOAD_SECTOR_SEGMENT:LOAD_SECTOR_OFFSET
-
-    call clear_screen
 
     mov ax, FUN_VIDEO_MODE + VGA_MODE
     int BIOS_VIDEO
@@ -125,7 +126,7 @@ main:
     mov ax, 0x0003
     int BIOS_VIDEO
 
-    call clear_screen
+    call CLEAR_SEGMENT:CLEAR_OFFSET
 
     push MAGENTA_BLACK
     push 1
@@ -135,7 +136,7 @@ main:
     call PRINT_SEGMENT:PRINT_OFFSET
 
     call SET_CURSOR_SEGMENT:SET_CURSOR_OFFSET
-    hlt
+    retf
 
 draw_logo:
     push bp
@@ -267,16 +268,6 @@ next_color:
     out dx, al      ; Set Blue=0
     inc si
     loop next_color
-    ret
-
-clear_screen:
-    mov ax, 0xB800      ; Memory-mapped region for text
-    mov es, ax
-    xor di, di          ; ES:DI = 0xB800:0 (start offset is 0)
-    mov ah, RED_BLACK
-    mov al, 0x20        ; ASCII space
-    mov cx, 2000        ; 80x25 = 2000 characters
-    rep stosw           ; Fill screen with spaces and attributes
     ret
 
 topline             db 0xC9

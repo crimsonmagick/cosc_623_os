@@ -9,6 +9,9 @@ READ_SECTORS        equ 0x0002
 MAIN_SEG equ 0x0001
 MAIN_OFF equ 0x2345
 
+STRING_SEG equ 0x0001
+STRING_OFF equ 0x7890
+
 org 0x7c00
 jmp short start
 nop
@@ -23,10 +26,20 @@ start:
     push MAIN_SEG
     push MAIN_OFF
 
-    push 0              ; or use call 0x0:load_sector, whatever.
-    call load_sector
+    call 0x:load_sector
+    call 0x:clear_screen
 
-    jmp word MAIN_SEG:MAIN_OFF
+    call MAIN_SEG:MAIN_OFF
+
+    push 0
+    push 1
+    push 0
+    push 0x0001
+    push 0x7890
+
+    call 0x:load_sector
+
+    jmp $
 
 times 0x50 - ($ - $$) db 0
 
@@ -118,6 +131,17 @@ set_cursor_pos:
     mov dh, 0x00        ; Row (0)
     mov dl, 0x01        ; Column (1)
     int BIOS_VIDEO
+    retf
+
+times 0x160 - ($ - $$) db 0
+clear_screen:
+    mov ax, 0xB800      ; Memory-mapped region for text
+    mov es, ax
+    xor di, di          ; ES:DI = 0xB800:0 (start offset is 0)
+    mov ah, 0x07        ; white on black
+    mov al, 0x20        ; ASCII space
+    mov cx, 2000        ; 80x25 = 2000 characters
+    rep stosw           ; Fill screen with spaces and attributes
     retf
 
 ; Pad to 512 bytes for an MBR:
