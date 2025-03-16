@@ -94,7 +94,7 @@ times 0x90 - ($ - $$) db 0
 ;   - [sp+12] Attribute.
 ; Outputs: None.
 ; Modifies:
-;   - AX, BX, CX, DX, VGA test buffer section (0xB800)
+;   - AX, BX, CX, DX, VGA text buffer section (0xB800)
 
 ; -----------------------------------------------------------------------------
 print:
