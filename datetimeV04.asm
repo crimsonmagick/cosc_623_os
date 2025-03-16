@@ -1,5 +1,5 @@
 PRINT_SEGMENT       equ 0
-PRINT_OFFSET        equ 0x7c70
+PRINT_OFFSET        equ 0x7c90
 
 VGA_TXT_DISP_HEIGHT equ 25
 VGA_TXT_DISP_WIDTH  equ 80

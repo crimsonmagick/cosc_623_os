@@ -12,6 +12,8 @@ MAIN_OFF equ 0x2345
 STRING_SEG equ 0x0001
 STRING_OFF equ 0x7890
 
+MAGENTA_BLACK equ 0x0D
+
 org 0x7c00
 jmp short start
 nop
@@ -27,10 +29,34 @@ start:
     push MAIN_OFF
 
     call 0x:load_sector
-    call 0x:clear_screen
+    call clear_screen
 
     call MAIN_SEG:MAIN_OFF
+    call print_block_with_bios
 
+    ; restore DS to 0
+    push cs
+    pop ds
+
+    ; Wait for key press
+    mov ah, 0x00
+    int 0x16
+
+    call clear_screen
+
+    push MAGENTA_BLACK
+    push 1
+    push prompt_sym
+    push 0
+    push 0
+    call 0:print
+
+    call set_cursor_pos
+
+    int 20h
+
+print_block_with_bios:
+    ; Inputs: cylinder, sector, head, segment, offset.
     push 0
     push 2
     push 0
@@ -39,13 +65,13 @@ start:
 
     call 0x:load_sector
 
-    mov bl, 0x07           ; Attribute
+    mov bl, MAGENTA_BLACK   ; Attribute
     mov cx, 37              ; length of the string
-    mov si, 0x7890         ; address of the string
-    mov dh, 0         ; row position
-    mov dl, 0         ; column position
+    mov si, 0x7890          ; address of the string
+    mov dh, 10               ; row position
+    mov dl, 22               ; column position
 
-    mov ax, 0x01
+    mov ax, 0x01            ; offset
     mov es, ax
 
     mov  ah, DISPLAY_FUN    ; BIOS display string (function 13h)
@@ -53,10 +79,9 @@ start:
     mov  bh, 0              ; Video page
     mov  bp, si             ; Put offset in BP (ES:BP points to the string)
     int  BIOS_VIDEO
+    ret
 
-    jmp $
-
-times 0x70 - ($ - $$) db 0
+times 0x90 - ($ - $$) db 0
 
 ; -----------------------------------------------------------------------------
 ; Function: print
@@ -69,19 +94,17 @@ times 0x70 - ($ - $$) db 0
 ;   - [sp+12] Attribute.
 ; Outputs: None.
 ; Modifies:
-;   - AX, BX, CX, DX
-; Calls:
-;   - BIOS interrupt 0x10, function 0x13.
+;   - AX, BX, CX, DX, VGA test buffer section (0xB800)
+
 ; -----------------------------------------------------------------------------
 print:
     push bp
     mov bp, sp
 
-    ; Set ES to VGA text buffer segment (0xB800)
+    ; Set ES to VGA text buffer section (0xB800)
     mov ax, 0xB800
     mov es, ax
 
-    ; Calculate screen offset: (row * 80 + column) * 2
     xor ax, ax
     mov al, [bp+8]       ; Load row from stack (byte)
     mov bx, 80           ; 80 columns per row
@@ -97,8 +120,6 @@ print:
     mov cx, [bp+12]      ; String length
     mov ah, [bp+14]      ; Attribute byte (foreground/background)
 
-    ; Write string to VGA memory
-    cld                  ; Ensure forward direction
 .write_loop:
     lodsb                ; Load next character from DS:SI into AL
     stosw                ; Store AX (char + attribute) at ES:DI
@@ -107,7 +128,7 @@ print:
     pop bp
     retf 10
 
-times 0x100 - ($ - $$) db 0
+times 0x120 - ($ - $$) db 0
 
 ; -----------------------------------------------------------------------------
 ; Function: load_sector
@@ -138,17 +159,19 @@ load_sector:
     pop bp
     retf 10
 
-
-times 0x150 - ($ - $$) db 0
 set_cursor_pos:
+    mov ah, 0x01          ; BIOS Set Cursor Shape function
+    mov ch, 0x06          ; Start scan line
+    mov cl, 0x07          ; End scan line
+    int BIOS_VIDEO        ; BIOS video interrupt
+
     mov ah, 0x02        ; BIOS function: set cursor position
     mov bh, 0x00        ; Page number (0)
     mov dh, 0x00        ; Row (0)
     mov dl, 0x01        ; Column (1)
     int BIOS_VIDEO
-    retf
+    ret
 
-times 0x160 - ($ - $$) db 0
 clear_screen:
     mov ax, 0xB800      ; Memory-mapped region for text
     mov es, ax
@@ -157,7 +180,9 @@ clear_screen:
     mov al, 0x20        ; ASCII space
     mov cx, 2000        ; 80x25 = 2000 characters
     rep stosw           ; Fill screen with spaces and attributes
-    retf
+    ret
+
+prompt_sym          db "$"
 
 ; Pad to 512 bytes for an MBR:
 padding times 510 - ($ - $$) db 0

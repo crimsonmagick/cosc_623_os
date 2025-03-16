@@ -33,17 +33,11 @@ SCALING_FACTOR      equ 0x8
 LOGO_START_X        equ (VGA_DISPLAY_WIDTH - (16 * SCALING_FACTOR)) / 2
 LOGO_START_Y        equ (200 - (9 * SCALING_FACTOR)) / 2 -40
 
-CLEAR_SEGMENT       equ 0
-CLEAR_OFFSET        equ 0x7d60
-
 PRINT_SEGMENT       equ 0
-PRINT_OFFSET        equ 0x7c70
+PRINT_OFFSET        equ 0x7c90
 
 LOAD_SECTOR_SEGMENT equ 0
 LOAD_SECTOR_OFFSET  equ 0x7d00
-
-SET_CURSOR_SEGMENT equ 0
-SET_CURSOR_OFFSET  equ 0x7d50
 
 DISPLAY_TIME_SEGMENT equ 0x0002
 DISPLAY_TIME_OFFSET  equ 0x3456
@@ -53,10 +47,16 @@ DISPLAY_TIME_OFFSET  equ 0x3456
 
 org 0x2345
 main:
-
     push cs
     pop ds
 
+hide_cursor:
+    mov ah, 0x01          ; BIOS Set Cursor Shape function
+    mov ch, 0b00001000    ; Start scan line (set bit 5 to hide cursor)
+    mov cl, 0x00          ; End scan line (N/A)
+    int BIOS_VIDEO        ; BIOS video interrupt
+
+show_time:
     push 1
     push 5
     push 0
@@ -64,12 +64,9 @@ main:
     push DISPLAY_TIME_OFFSET
     call LOAD_SECTOR_SEGMENT:LOAD_SECTOR_OFFSET
 
-    mov ax, FUN_VIDEO_MODE + VGA_MODE
-    int BIOS_VIDEO
-
-    call set_red_gradient_palette
 
 ;    TODO logo can't be drawn in VGA text mode. might work around this later by drawing ASCII directly with font from ROM
+;    call set_red_gradient_palette
 ;    push LOGO_START_X
 ;    push LOGO_START_Y
 ;    call draw_logo
@@ -118,24 +115,6 @@ main:
 
     call DISPLAY_TIME_SEGMENT:DISPLAY_TIME_OFFSET
 
-    ; Wait for key press
-    mov ah, 0x00
-    int 0x16
-
-    ; Switch back to text mode (80x25)
-    mov ax, 0x0003
-    int BIOS_VIDEO
-
-    call CLEAR_SEGMENT:CLEAR_OFFSET
-
-    push MAGENTA_BLACK
-    push 1
-    push prompt_sym
-    push 0
-    push 0
-    call PRINT_SEGMENT:PRINT_OFFSET
-
-    call SET_CURSOR_SEGMENT:SET_CURSOR_OFFSET
     retf
 
 draw_logo:
@@ -279,13 +258,12 @@ bottomline          db 0xC8
 blockline           db 0xDE
                     db 0xDC
                     db 0xDD
-welbos              db 0xBA, `    WelbOS v03   `, 0xBA
+welbos              db 0xBA, `    WelbOS v04   `, 0xBA
 welboslen           equ ($ - welbos)
 name                db 0xBA, `   Welby Seely   `, 0xBA
 namelen             equ ($ - name)
 anykey              db "Press any key to continue..."
 anykeylen           equ ($ - anykey)
-prompt_sym          db "$"
 red_shades db 58, 55, 50, 45, 40, 35, 30, 25, 20; Bright to dark red
 ; Row color table, from top to bottom row
 row_colors db 32, 33, 34, 35, 36, 37, 38, 39, 40  ; Use only custom red shades
