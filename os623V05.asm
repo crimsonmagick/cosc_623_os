@@ -99,16 +99,18 @@ start:
     call 0x:print
     pop ds
 
-;    PRINT_VIDEO MAGENTA_BLACK, 37, 0x0001, 0x7890, 12, 22
-
-
     ; Wait for key press
     mov ah, 0x00
     int 0x16
 
     call clear_screen
 
-    PRINT_VIDEO MAGENTA_BLACK, 1, 0x0000, prompt_sym, 0, 0
+    push MAGENTA_BLACK
+    push 1
+    push prompt_sym
+    push 0
+    push 0
+    call 0x:print
 
     call set_cursor_pos
 
@@ -119,11 +121,11 @@ set_ivt:
     push es
 
     xor ax, ax
-    mov es, ax                    ; es = 0x0000, IVT segment
-    cli                           ; disable interrupts during change
-    mov word [es:0x40*4], disp    ; IP for int 0x40 → point to `disp`
-    mov   word [es:0x40*4+2], cs  ; CS for int 0x40 → current segment
-    sti                           ; re-enable interrupts
+    mov es, ax                        ; es = 0x0000, IVT segment
+    cli                               ; disable interrupts during change
+    mov word [es:0xf0 * 4], disp      ; IP for int 0x40 → point to `disp`
+    mov   word [es:0xf0 * 4 +2 ], cs  ; CS for int 0x40 → current segment
+    sti                               ; re-enable interrupts
 
     pop es
     pop ax
@@ -159,7 +161,7 @@ print:
     mov  ah, DISPLAY_FUN    ; BIOS display string (function 13h)
     mov  al, 0              ; Write mode = 1 (cursor stays after last char
     mov  bh, 0              ; Video page
-    int 0x40
+    int 0xf0
 
     pop bp
     retf 10
