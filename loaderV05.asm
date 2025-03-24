@@ -56,13 +56,13 @@ hide_cursor:
     mov cl, 0x00          ; End scan line (N/A)
     int BIOS_VIDEO        ; BIOS video interrupt
 
-show_time:
-;    push 1
-;    push 5
-;    push 0
-;    push DISPLAY_TIME_SEGMENT
-;    push DISPLAY_TIME_OFFSET
-;    call LOAD_SECTOR_SEGMENT:LOAD_SECTOR_OFFSET
+load_time:
+    push 1
+    push 5
+    push 0
+    push DISPLAY_TIME_SEGMENT
+    push DISPLAY_TIME_OFFSET
+    call LOAD_SECTOR_SEGMENT:LOAD_SECTOR_OFFSET
 
 
 ;    TODO logo can't be drawn in VGA text mode. might work around this later by drawing ASCII directly with font from ROM
@@ -112,8 +112,9 @@ show_time:
     push LINE_ROW_ANYKEY + 4          ; Row
     push blockline                    ; Address of 3-tuple
     call draw_line
-;
-;    call DISPLAY_TIME_SEGMENT:DISPLAY_TIME_OFFSET
+
+show_time:
+    call DISPLAY_TIME_SEGMENT:DISPLAY_TIME_OFFSET
 
     retf
 
