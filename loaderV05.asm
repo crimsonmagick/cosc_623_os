@@ -51,18 +51,18 @@ main:
     pop ds
 
 hide_cursor:
-    mov ah, 0x01          ; BIOS Set Cursor Shape function
-    mov ch, 0b00001000    ; Start scan line (set bit 5 to hide cursor)
-    mov cl, 0x00          ; End scan line (N/A)
-    int BIOS_VIDEO        ; BIOS video interrupt
+;    mov ah, 0x01          ; BIOS Set Cursor Shape function
+;    mov ch, 0b00001000    ; Start scan line (set bit 5 to hide cursor)
+;    mov cl, 0x00          ; End scan line (N/A)
+;    int BIOS_VIDEO        ; BIOS video interrupt
 
 show_time:
-    push 1
-    push 5
-    push 0
-    push DISPLAY_TIME_SEGMENT
-    push DISPLAY_TIME_OFFSET
-    call LOAD_SECTOR_SEGMENT:LOAD_SECTOR_OFFSET
+;    push 1
+;    push 5
+;    push 0
+;    push DISPLAY_TIME_SEGMENT
+;    push DISPLAY_TIME_OFFSET
+;    call LOAD_SECTOR_SEGMENT:LOAD_SECTOR_OFFSET
 
 
 ;    TODO logo can't be drawn in VGA text mode. might work around this later by drawing ASCII directly with font from ROM
@@ -71,49 +71,49 @@ show_time:
 ;    push LOGO_START_Y
 ;    call draw_logo
 
-    push RED_BLACK
-    push BOX_LENGTH
-    push welbos
-    push MESSAGE_ROW
-    push CENTER_VGA_TXT(BOX_LENGTH)
-    call PRINT_SEGMENT:PRINT_OFFSET
-
-    push RED_BLACK
-    push BOX_LENGTH - 1               ; Repeat count
-    push CENTER_VGA_TXT(BOX_LENGTH)   ; Column
-    push LINE_ROW_TOP                 ; Row
-    push topline                      ; Address of 3-tuple
-    call draw_line
-
-    push RED_BLACK
-    push BOX_LENGTH
-    push name
-    push LINE_ROW_NAME
-    push CENTER_VGA_TXT(BOX_LENGTH)
-    call PRINT_SEGMENT:PRINT_OFFSET
-
-    push RED_BLACK
-    push BOX_LENGTH - 1       ; Repeat count
-    push CENTER_VGA_TXT(BOX_LENGTH)   ; Column
-    push LINE_ROW_BOTTOM     ; Row
-    push bottomline             ; Address of 3-tuple
-    call draw_line
-
-    push YELLOW_BLACK
-    push ANYKEY_LENGTH
-    push anykey
-    push LINE_ROW_ANYKEY
-    push CENTER_VGA_TXT(ANYKEY_LENGTH)
-    call PRINT_SEGMENT:PRINT_OFFSET
-
-    push WHITE_BLACK
-    push VGA_TXT_DISP_WIDTH - 1       ; Repeat count
-    push 0   ; Column
-    push LINE_ROW_ANYKEY + 4          ; Row
-    push blockline                    ; Address of 3-tuple
-    call draw_line
-
-    call DISPLAY_TIME_SEGMENT:DISPLAY_TIME_OFFSET
+;    push RED_BLACK
+;    push BOX_LENGTH
+;    push welbos
+;    push MESSAGE_ROW
+;    push CENTER_VGA_TXT(BOX_LENGTH)
+;    call PRINT_SEGMENT:PRINT_OFFSET
+;
+;    push RED_BLACK
+;    push BOX_LENGTH - 1               ; Repeat count
+;    push CENTER_VGA_TXT(BOX_LENGTH)   ; Column
+;    push LINE_ROW_TOP                 ; Row
+;    push topline                      ; Address of 3-tuple
+;    call draw_line
+;
+;    push RED_BLACK
+;    push BOX_LENGTH
+;    push name
+;    push LINE_ROW_NAME
+;    push CENTER_VGA_TXT(BOX_LENGTH)
+;    call PRINT_SEGMENT:PRINT_OFFSET
+;
+;    push RED_BLACK
+;    push BOX_LENGTH - 1       ; Repeat count
+;    push CENTER_VGA_TXT(BOX_LENGTH)   ; Column
+;    push LINE_ROW_BOTTOM     ; Row
+;    push bottomline             ; Address of 3-tuple
+;    call draw_line
+;
+;    push YELLOW_BLACK
+;    push ANYKEY_LENGTH
+;    push anykey
+;    push LINE_ROW_ANYKEY
+;    push CENTER_VGA_TXT(ANYKEY_LENGTH)
+;    call PRINT_SEGMENT:PRINT_OFFSET
+;
+;    push WHITE_BLACK
+;    push VGA_TXT_DISP_WIDTH - 1       ; Repeat count
+;    push 0   ; Column
+;    push LINE_ROW_ANYKEY + 4          ; Row
+;    push blockline                    ; Address of 3-tuple
+;    call draw_line
+;
+;    call DISPLAY_TIME_SEGMENT:DISPLAY_TIME_OFFSET
 
     retf
 
