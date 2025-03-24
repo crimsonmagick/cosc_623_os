@@ -77,7 +77,7 @@ start:
     call 0x:load_sector
     call clear_screen
 
-;    call MAIN_SEG:MAIN_OFF
+    call MAIN_SEG:MAIN_OFF
 
     ; Inputs: cylinder, sector, head, segment, offset.
     push 0
@@ -85,14 +85,9 @@ start:
     push 0
     push 0x0001
     push 0x7890
-
     call 0x:load_sector
 
-    PRINT_VIDEO MAGENTA_BLACK, 37, 0x0001, 0x7890, 0, 0
-
-    ; restore DS to 0
-;    push cs
-;    pop ds
+    PRINT_VIDEO MAGENTA_BLACK, 37, 0x0001, 0x7890, 12, 22
 
     ; Wait for key press
     mov ah, 0x00
@@ -100,12 +95,7 @@ start:
 
     call clear_screen
 
-;    push MAGENTA_BLACK
-;    push 1
-;    push prompt_sym
-;    push 0
-;    push 0
-;    call 0:print
+    PRINT_VIDEO MAGENTA_BLACK, 1, 0x0000, prompt_sym, 0, 0
 
     call set_cursor_pos
 
