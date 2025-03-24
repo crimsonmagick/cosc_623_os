@@ -47,6 +47,7 @@ DISPLAY_TIME_OFFSET  equ 0x3456
 
 org 0x2345
 main:
+    push ds
     push cs
     pop ds
 
@@ -63,13 +64,6 @@ load_time:
     push DISPLAY_TIME_SEGMENT
     push DISPLAY_TIME_OFFSET
     call LOAD_SECTOR_SEGMENT:LOAD_SECTOR_OFFSET
-
-
-;    TODO logo can't be drawn in VGA text mode. might work around this later by drawing ASCII directly with font from ROM
-;    call set_red_gradient_palette
-;    push LOGO_START_X
-;    push LOGO_START_Y
-;    call draw_logo
 
     push RED_BLACK
     push BOX_LENGTH
@@ -116,67 +110,8 @@ load_time:
 show_time:
     call DISPLAY_TIME_SEGMENT:DISPLAY_TIME_OFFSET
 
+    pop ds
     retf
-
-draw_logo:
-    push bp
-    mov bp, sp
-
-    mov ax, [bp + 4]
-    mov cx, VGA_DISPLAY_WIDTH
-    mul cx
-    add ax, [bp + 6]
-    mov di, ax
-
-    mov ax, 0xA000     ; memory mapped I/O segment for VGA
-    mov es, ax
-
-    mov si, w_bitmap   ; source bitmap start address
-
-    mov dx, 9                  ; logical row that we're calculating
-    push SCALING_FACTOR
-draw_rows:
-    mov bx, 9
-    sub bx, dx                 ; determine color for this row
-    mov bl, [row_colors + bx]  ; store row color in BL (or AL, but we’ll need AL soon)
-    mov ax, [si]               ; retrieve pixels for this row
-
-    ; Process 16 pixels
-    mov cx, 16
-draw_row:
-    shl ax, 1          ; Shift left (test MSB of AX)
-    jnc skip_column
-
-    push cx
-    push ax
-    mov cx, SCALING_FACTOR
-    mov al, bl
-    rep stosb
-    pop ax
-    pop cx
-    jmp next_column
-skip_column:
-    add di, SCALING_FACTOR
-next_column:
-    loop draw_row
-
-scale_vertically:
-    add di, 320 - 16 * SCALING_FACTOR ; Move to next VGA row
-    pop cx
-    dec cx
-    cmp cx, 0
-    jz next_source_row
-    push cx
-    jmp draw_rows
-next_source_row:
-    add si, 2
-    dec dx
-    jz logo_done
-    push SCALING_FACTOR
-    jmp draw_rows
-logo_done:
-    pop bp
-    ret 4
 
 draw_line:
     push bp
@@ -232,23 +167,6 @@ draw_line_right:
     pop bp
     ret 10
 
-set_red_gradient_palette:
-    mov dx, 0x3C8   ; VGA color index port
-    mov al, 32      ; Start setting colors from index 32
-    out dx, al
-    inc dx          ; Now dx = 0x3C9 (RGB color data port)
-
-    mov cx, 9       ; 9 shades for 9 rows
-    mov si, red_shades
-next_color:
-    mov al, [si]    ; Load Red intensity
-    out dx, al      ; Set Red value
-    xor al, al      ; Set Green=0
-    out dx, al
-    out dx, al      ; Set Blue=0
-    inc si
-    loop next_color
-    ret
 
 topline             db 0xC9
                     db 0xCD
@@ -265,15 +183,4 @@ name                db 0xBA, `   Welby Seely   `, 0xBA
 namelen             equ ($ - name)
 anykey              db "Press any key to continue..."
 anykeylen           equ ($ - anykey)
-red_shades db 58, 55, 50, 45, 40, 35, 30, 25, 20; Bright to dark red
-; Row color table, from top to bottom row
-row_colors db 32, 33, 34, 35, 36, 37, 38, 39, 40  ; Use only custom red shades
-w_bitmap db 02h, 80h
-         db 02h, 80h
-         db 04h, 40h
-         db 04h, 40h
-         db 08h, 21h
-         db 88h, 22h
-         db 50h, 14h
-         db 50h, 14h
-         db 20h, 08h
+

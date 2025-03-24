@@ -56,7 +56,7 @@ MAGENTA_BLACK equ 0x0D
     mov  al, 0              ; Write mode = 1 (cursor stays after last char
     mov  bh, 0              ; Video page
 
-    call disp
+    int 0x40
     pop bp
 %endmacro
 
@@ -67,6 +67,7 @@ nop
 bsOEM       db "WelbOS v03"         ; OEM String
 
 start:
+    call set_ivt
     ; Inputs: cylinder, sector, head, segment, offset.
     push 1
     push 2
@@ -87,7 +88,19 @@ start:
     push 0x7890
     call 0x:load_sector
 
-    PRINT_VIDEO MAGENTA_BLACK, 37, 0x0001, 0x7890, 12, 22
+    push ds
+    mov ax, 0x0001
+    mov ds, ax
+    push MAGENTA_BLACK
+    push 37
+    push 0x7890
+    push 12
+    push 22
+    call 0x:print
+    pop ds
+
+;    PRINT_VIDEO MAGENTA_BLACK, 37, 0x0001, 0x7890, 12, 22
+
 
     ; Wait for key press
     mov ah, 0x00
@@ -100,8 +113,23 @@ start:
     call set_cursor_pos
 
     int 20h
-times 0x90 - ($ - $$) db 0
 
+set_ivt:
+    push ax
+    push es
+
+    xor ax, ax
+    mov es, ax                    ; es = 0x0000, IVT segment
+    cli                           ; disable interrupts during change
+    mov word [es:0x40*4], disp    ; IP for int 0x40 → point to `disp`
+    mov   word [es:0x40*4+2], cs  ; CS for int 0x40 → current segment
+    sti                           ; re-enable interrupts
+
+    pop es
+    pop ax
+    ret
+
+times 0x90 - ($ - $$) db 0
 
 ; -----------------------------------------------------------------------------
 ; Function: print
@@ -131,7 +159,7 @@ print:
     mov  ah, DISPLAY_FUN    ; BIOS display string (function 13h)
     mov  al, 0              ; Write mode = 1 (cursor stays after last char
     mov  bh, 0              ; Video page
-    call disp
+    int 0x40
 
     pop bp
     retf 10
@@ -188,7 +216,7 @@ disp:
     pop si
     pop bx
     pop ds
-    ret
+    iret
 
 times 0x120 - ($ - $$) db 0
 
