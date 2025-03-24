@@ -2,7 +2,7 @@
 # Makefile of os623V0x.asm (x=[1,2,3,4])
 ##################################################
 
-VER			= V04
+VER			= V05
 ASM			= nasm
 ASMFLAGS		= -f bin
 IMG			= a.img
@@ -11,13 +11,13 @@ MBR			=  os623V.asm
 MBR_SRC		= $(subst V,$(VER),$(MBR))
 MBR_BIN		= $(subst .asm,.bin,$(MBR_SRC))
 
-DATA_SRC	=  loaderV04.asm
+DATA_SRC	=  loaderV05.asm
 DATA_BIN	=  data.bin
 
-DATE_SRC	=  datetimeV04.asm
+DATE_SRC	=  datetimeV05.asm
 DATE_BIN	=  date.bin
 
-STRING_SRC  =  stringV04.asm
+STRING_SRC  =  stringV05.asm
 STRING_BIN  =  string.bin
 
 .PHONY : everything
