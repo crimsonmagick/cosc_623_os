@@ -35,31 +35,6 @@ MAGENTA_BLACK equ 0x0D
     int  BIOS_VIDEO
 %endmacro
 
-; 1) attribute
-; 2) length of string
-; 3) segment of string
-; 4) address of string
-; 5) row position
-; 6) column position
-%macro PRINT_VIDEO 6
-    push bp
-
-    mov bl, %1         ; Attribute (lightgreen on black)
-    mov cx, %2         ; length of the string
-    mov ax, %3         ; segment of the string
-    mov es, ax
-    mov bp, %4         ; address of the string
-    mov dh, %5         ; row position
-    mov dl, %6         ; column position
-
-    mov  ah, DISPLAY_FUN    ; BIOS display string (function 13h)
-    mov  al, 0              ; Write mode = 1 (cursor stays after last char
-    mov  bh, 0              ; Video page
-
-    int 0x40
-    pop bp
-%endmacro
-
 org 0x7c00
 jmp short start
 nop
