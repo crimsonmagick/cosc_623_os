@@ -107,11 +107,11 @@ times 0x90 - ($ - $$) db 0
 ; Function: print
 ; Description: Prints a string to the console.
 ; Inputs:
-;   - [sp+4] Column position to begin writing the string.
-;   - [sp+6] Row position to begin writing the string.
-;   - [sp+8] Memory address location of the string.
-;   - [sp+10] Length of the string.
-;   - [sp+12] Attribute.
+;   - [bp+6] Column position to begin writing the string.
+;   - [bp+8] Row position to begin writing the string.
+;   - [bp+10] Memory address location of the string.
+;   - [bp+12] Length of the string.
+;   - [bp+14] Attribute.
 ; Outputs: None.
 ; Modifies:
 ;   - AX, BX, CX, DX, VGA text buffer section (0xB800)
@@ -126,7 +126,7 @@ print:
     pop es                 ; segment of the string
     mov dh, [bp+8]         ; row position
     mov dl, [bp+6]         ; column position
-    mov bp, [bp+10]        ; address of the string, !!destructive to frame!!
+    mov bp, [bp+10]        ; address of the string, !!destructive to relative frame refs!!
 
     mov  ah, DISPLAY_FUN    ; BIOS display string (function 13h)
     mov  al, 0              ; Write mode = 1 (cursor stays after last char
@@ -184,10 +184,10 @@ disp:
     stosw                ; Store AX (char + attribute) at ES:DI
     loop .write_loop
 
-    pop ds
-    pop bx
-    pop si
     pop di
+    pop si
+    pop bx
+    pop ds
     ret
 
 times 0x120 - ($ - $$) db 0

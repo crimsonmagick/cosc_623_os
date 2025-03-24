@@ -77,41 +77,41 @@ show_time:
     push MESSAGE_ROW
     push CENTER_VGA_TXT(BOX_LENGTH)
     call PRINT_SEGMENT:PRINT_OFFSET
-;
-;    push RED_BLACK
-;    push BOX_LENGTH - 1               ; Repeat count
-;    push CENTER_VGA_TXT(BOX_LENGTH)   ; Column
-;    push LINE_ROW_TOP                 ; Row
-;    push topline                      ; Address of 3-tuple
-;    call draw_line
-;
-;    push RED_BLACK
-;    push BOX_LENGTH
-;    push name
-;    push LINE_ROW_NAME
-;    push CENTER_VGA_TXT(BOX_LENGTH)
-;    call PRINT_SEGMENT:PRINT_OFFSET
-;
-;    push RED_BLACK
-;    push BOX_LENGTH - 1       ; Repeat count
-;    push CENTER_VGA_TXT(BOX_LENGTH)   ; Column
-;    push LINE_ROW_BOTTOM     ; Row
-;    push bottomline             ; Address of 3-tuple
-;    call draw_line
-;
-;    push YELLOW_BLACK
-;    push ANYKEY_LENGTH
-;    push anykey
-;    push LINE_ROW_ANYKEY
-;    push CENTER_VGA_TXT(ANYKEY_LENGTH)
-;    call PRINT_SEGMENT:PRINT_OFFSET
-;
-;    push WHITE_BLACK
-;    push VGA_TXT_DISP_WIDTH - 1       ; Repeat count
-;    push 0   ; Column
-;    push LINE_ROW_ANYKEY + 4          ; Row
-;    push blockline                    ; Address of 3-tuple
-;    call draw_line
+
+    push RED_BLACK
+    push BOX_LENGTH - 1               ; Repeat count
+    push CENTER_VGA_TXT(BOX_LENGTH)   ; Column
+    push LINE_ROW_TOP                 ; Row
+    push topline                      ; Address of 3-tuple
+    call draw_line
+
+    push RED_BLACK
+    push BOX_LENGTH
+    push name
+    push LINE_ROW_NAME
+    push CENTER_VGA_TXT(BOX_LENGTH)
+    call PRINT_SEGMENT:PRINT_OFFSET
+
+    push RED_BLACK
+    push BOX_LENGTH - 1       ; Repeat count
+    push CENTER_VGA_TXT(BOX_LENGTH)   ; Column
+    push LINE_ROW_BOTTOM     ; Row
+    push bottomline             ; Address of 3-tuple
+    call draw_line
+
+    push YELLOW_BLACK
+    push ANYKEY_LENGTH
+    push anykey
+    push LINE_ROW_ANYKEY
+    push CENTER_VGA_TXT(ANYKEY_LENGTH)
+    call PRINT_SEGMENT:PRINT_OFFSET
+
+    push WHITE_BLACK
+    push VGA_TXT_DISP_WIDTH - 1       ; Repeat count
+    push 0   ; Column
+    push LINE_ROW_ANYKEY + 4          ; Row
+    push blockline                    ; Address of 3-tuple
+    call draw_line
 ;
 ;    call DISPLAY_TIME_SEGMENT:DISPLAY_TIME_OFFSET
 
