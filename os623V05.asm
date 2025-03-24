@@ -56,7 +56,7 @@ MAGENTA_BLACK equ 0x0D
     mov  al, 0              ; Write mode = 1 (cursor stays after last char
     mov  bh, 0              ; Video page
 
-    call 0x:print
+    call disp
     pop bp
 %endmacro
 
@@ -102,8 +102,42 @@ start:
     int 20h
 times 0x90 - ($ - $$) db 0
 
+
 ; -----------------------------------------------------------------------------
 ; Function: print
+; Description: Prints a string to the console.
+; Inputs:
+;   - [sp+4] Column position to begin writing the string.
+;   - [sp+6] Row position to begin writing the string.
+;   - [sp+8] Memory address location of the string.
+;   - [sp+10] Length of the string.
+;   - [sp+12] Attribute.
+; Outputs: None.
+; Modifies:
+;   - AX, BX, CX, DX, VGA text buffer section (0xB800)
+
+; -----------------------------------------------------------------------------
+print:
+    push bp
+    mov bp, sp
+    mov bl, [bp+14]        ; Attribute (lightgreen on black)
+    mov cx, [bp+12]        ; length of the string
+    push ds
+    pop es                 ; segment of the string
+    mov dh, [bp+8]         ; row position
+    mov dl, [bp+6]         ; column position
+    mov bp, [bp+10]        ; address of the string, !!destructive to frame!!
+
+    mov  ah, DISPLAY_FUN    ; BIOS display string (function 13h)
+    mov  al, 0              ; Write mode = 1 (cursor stays after last char
+    mov  bh, 0              ; Video page
+    call disp
+
+    pop bp
+    retf 10
+
+; -----------------------------------------------------------------------------
+; Function: disp
 ; Description: Prints a string to the console.
 ;    bl         ; Attribute (lightgreen on black)
 ;    cx         ; length of the string
@@ -111,7 +145,7 @@ times 0x90 - ($ - $$) db 0
 ;    dh         ; row position
 ;    dl         ; column position
 ; -----------------------------------------------------------------------------
-print:
+disp:
     ; save non-volatile registers
     push ds
     push bx
@@ -154,7 +188,7 @@ print:
     pop bx
     pop si
     pop di
-    retf
+    ret
 
 times 0x120 - ($ - $$) db 0
 
