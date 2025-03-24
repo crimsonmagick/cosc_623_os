@@ -1,6 +1,8 @@
 bits 16
 BIOS_VIDEO          equ 0x10
+CUSTOM_VIDEO        equ 0xf0
 DISPLAY_FUN         equ 0x13
+CLEAR_FUN           equ 0x06
 
 BIOS_FLOPPY         equ 0x0013
 READ_SECTORS        equ 0x0002
@@ -39,7 +41,7 @@ org 0x7c00
 jmp short start
 nop
 
-bsOEM       db "WelbOS v03"         ; OEM String
+bsOEM       db "WelbOS v05"         ; OEM String
 
 start:
     call set_ivt
@@ -51,7 +53,8 @@ start:
     push MAIN_OFF
 
     call 0x:load_sector
-    call clear_screen
+    mov ah, 0x06
+    int CUSTOM_VIDEO
 
     call MAIN_SEG:MAIN_OFF
 
@@ -63,22 +66,14 @@ start:
     push 0x7890
     call 0x:load_sector
 
-    push ds
-    mov ax, 0x0001
-    mov ds, ax
-    push MAGENTA_BLACK
-    push 37
-    push 0x7890
-    push 12
-    push 22
-    call 0x:print
-    pop ds
+    PRINT MAGENTA_BLACK, 37, 0x0001, 0x7890, 12, 22
 
     ; Wait for key press
     mov ah, 0x00
     int 0x16
 
-    call clear_screen
+    mov ah, 0x06
+    int CUSTOM_VIDEO
 
     push MAGENTA_BLACK
     push 1
@@ -96,11 +91,11 @@ set_ivt:
     push es
 
     xor ax, ax
-    mov es, ax                        ; es = 0x0000, IVT segment
-    cli                               ; disable interrupts during change
-    mov word [es:0xf0 * 4], disp      ; IP for int 0x40 → point to `disp`
-    mov   word [es:0xf0 * 4 +2 ], cs  ; CS for int 0x40 → current segment
-    sti                               ; re-enable interrupts
+    mov es, ax                                           ; es = 0x0000, IVT segment
+    cli                                                  ; disable interrupts during change
+    mov word [es:CUSTOM_VIDEO * 4], function_group       ; IP for int 0xf0 → point to `function_group`
+    mov   word [es:CUSTOM_VIDEO * 4 + 2 ], cs            ; CS for int 0xf0 → current segment
+    sti                                                  ; re-enable interrupts
 
     pop es
     pop ax
@@ -133,16 +128,23 @@ print:
     mov dl, [bp+6]         ; column position
     mov bp, [bp+10]        ; address of the string, !!destructive to relative frame refs!!
 
-    mov  ah, DISPLAY_FUN    ; BIOS display string (function 13h)
+    mov  ah, 13h            ; BIOS display string (function 13h)
     mov  al, 0              ; Write mode = 1 (cursor stays after last char
     mov  bh, 0              ; Video page
-    int 0xf0
+    int CUSTOM_VIDEO
 
     pop bp
     retf 10
 
+function_group:
+  cmp ah, DISPLAY_FUN
+  je _disp
+  cmp ah, CLEAR_FUN
+  je _clear_screen
+  jmp .end
+
 ; -----------------------------------------------------------------------------
-; Function: disp
+; IRQ Function: disp
 ; Description: Prints a string to the console.
 ;    bl         ; Attribute (lightgreen on black)
 ;    cx         ; length of the string
@@ -150,7 +152,7 @@ print:
 ;    dh         ; row position
 ;    dl         ; column position
 ; -----------------------------------------------------------------------------
-disp:
+_disp:
     ; save non-volatile registers
     push ds
     push bx
@@ -193,6 +195,17 @@ disp:
     pop si
     pop bx
     pop ds
+    jmp .end
+
+_clear_screen:
+    mov ax, 0xB800      ; Memory-mapped region for text
+    mov es, ax
+    xor di, di          ; ES:DI = 0xB800:0 (start offset is 0)
+    mov ah, 0x07        ; white on black
+    mov al, 0x20        ; ASCII space
+    mov cx, 2000        ; 80x25 = 2000 characters
+    rep stosw           ; Fill screen with spaces and attributes
+.end:
     iret
 
 times 0x120 - ($ - $$) db 0
@@ -237,16 +250,6 @@ set_cursor_pos:
     mov dh, 0x00        ; Row (0)
     mov dl, 0x01        ; Column (1)
     int BIOS_VIDEO
-    ret
-
-clear_screen:
-    mov ax, 0xB800      ; Memory-mapped region for text
-    mov es, ax
-    xor di, di          ; ES:DI = 0xB800:0 (start offset is 0)
-    mov ah, 0x07        ; white on black
-    mov al, 0x20        ; ASCII space
-    mov cx, 2000        ; 80x25 = 2000 characters
-    rep stosw           ; Fill screen with spaces and attributes
     ret
 
 prompt_sym          db "$"
