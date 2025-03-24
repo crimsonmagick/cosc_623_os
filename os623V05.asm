@@ -42,6 +42,8 @@ MAGENTA_BLACK equ 0x0D
 ; 5) row position
 ; 6) column position
 %macro PRINT_VIDEO 6
+    push bp
+
     mov bl, %1         ; Attribute (lightgreen on black)
     mov cx, %2         ; length of the string
     mov ax, %3         ; segment of the string
@@ -55,6 +57,7 @@ MAGENTA_BLACK equ 0x0D
     mov  bh, 0              ; Video page
 
     call 0x:print
+    pop bp
 %endmacro
 
 org 0x7c00
@@ -119,7 +122,12 @@ times 0x90 - ($ - $$) db 0
 ;    dl         ; column position
 ; -----------------------------------------------------------------------------
 print:
+    ; save non-volatile registers
     push ds
+    push bx
+    push si
+    push di
+
     push bx
     push dx
 
@@ -153,6 +161,9 @@ print:
     loop .write_loop
 
     pop ds
+    pop bx
+    pop si
+    pop di
     retf
 
 times 0x120 - ($ - $$) db 0
