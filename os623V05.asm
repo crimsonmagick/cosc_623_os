@@ -14,6 +14,70 @@ STRING_OFF equ 0x7890
 
 MAGENTA_BLACK equ 0x0D
 
+; 1) attribute
+; 2) length of string
+; 3) address of string
+; 4) row position
+; 5) column position
+%macro PRINT 5
+    mov bl, %1         ; Attribute (lightgreen on black)
+    mov cx, %2         ; length of the string
+    mov si, %3         ; address of the string
+    mov dh, %4         ; row position
+    mov dl, %5         ; column position
+
+    ; We need ES:BP provides the pointer to the string - load the data segment (DS) base into ES
+    push ds
+    pop es
+
+    mov  ah, DISPLAY_FUN    ; BIOS display string (function 13h)
+    mov  al, 0              ; Write mode = 1 (cursor stays after last char
+    mov  bh, 0              ; Video page
+    mov  bp, si             ; Put offset in BP (ES:BP points to the string)
+    int  BIOS_VIDEO
+%endmacro
+
+; 1) attribute
+; 2) length of string
+; 3) address of string
+; 4) row position
+; 5) column position
+%macro PRINT_VIDEO 5
+    mov bl, %1         ; Attribute (lightgreen on black)
+    mov cx, %2         ; length of the string
+    mov si, %3         ; address of the string
+    mov dh, %4         ; row position
+    mov dl, %5         ; column position
+
+    push bx
+    push dx
+
+    ; Set ES to VGA text buffer section (0xB800)
+    mov ax, 0xB800
+    mov es, ax
+
+    xor ax, ax
+
+    mov al, dh           ; Load row
+    mov bx, 80           ; 80 columns per row
+    mul bx               ; AX = row * 80
+
+    pop dx
+    xor dh, dh
+    add ax, dx           ; AX = (row * 80) + column
+    shl ax, 1            ; Multiply by 2 (each char = 2 bytes)
+    mov di, ax           ; ES:DI now points to VGA memory location
+
+    ; Set up string parameters
+    pop bx
+    mov ah, bl      ; Attribute byte (foreground/background)
+
+.write_loop_macro:
+    lodsb                ; Load next character from DS:SI into AL
+    stosw                ; Store AX (char + attribute) at ES:DI
+    loop .write_loop_macro
+%endmacro
+
 org 0x7c00
 jmp short start
 nop
@@ -65,19 +129,8 @@ print_block_with_bios:
 
     call 0x:load_sector
 
-    mov bl, MAGENTA_BLACK   ; Attribute
-    mov cx, 37              ; length of the string
-    mov si, 0x7890          ; address of the string
-    mov dh, 10               ; row position
-    mov dl, 22               ; column position
+    PRINT_VIDEO MAGENTA_BLACK, 37, 0x7890, 10, 24
 
-    mov ax, 0x01            ; offset
-    mov es, ax
-
-    mov  ah, DISPLAY_FUN    ; BIOS display string (function 13h)
-    mov  al, 0              ; Write mode = 1 (cursor stays after last char
-    mov  bh, 0              ; Video page
-    mov  bp, si             ; Put offset in BP (ES:BP points to the string)
     int  BIOS_VIDEO
     ret
 
