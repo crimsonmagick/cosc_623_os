@@ -26,7 +26,7 @@
     tabsize=4
 }
 
-\title{Assignment 1: v04 - Display by VRAM + Inter Segment Move}
+\title{Assignment 5: v05 - Display by VRAM as BIOS INT F0}
 \author{
     [Welby Seely] \\
     \texttt{[wseely@emich.edu]}
@@ -36,37 +36,11 @@
 \begin{document}
 
     \maketitle
-    \section{Intro}\label{sec:intro}
-    The v3 version of the bootloader was updated to display (almost) al text from VRAM.
+    \section{Overview}\label{sec:intro}
+    The v4 version of the bootloader was updated to use 0xf0 as an interrupt function group to call the VRAM display function and the VRAM clear function.
+    The main refactor was to add the `disp' subroutine with parameter compatibility with BIOS Video Function 0x10 0x13.
 
-    VGA graphics mode was disabled to enable writing to the memory mapped VRAM region starting at 0xB800.
-    Unfortunately, this also disabled drawing the big `W' part of the logo.
-    In order to keep it and still write characters manually to VRAM, I would need to manually draw the characters based on a font.
-    There should be fonts on the ROM I could use - I might add this to a future version.
-
-    An assembly file with the string `BLOCK DATA, Press Key to Continue \ldots' was added, loaded from logical sector 1 of a.img.
-    This sector is then loaded into 0001:7890 so that the `block data' can be read later.
-    This string is displayed in lieu of the giant `W'.
-
-    After entering any key, the program clears the screen and switches to display a magenta `\$' and a
-    blinking cursor.
-
-    \begin{itemize}
-        \item Boot from MBR.
-        \item MBR clears screen by VRAM (calls clear\_screen).
-        \item MBR loads loaderV04.
-        \item loadverV04 displays the `logo' by VRAM.
-        \item loaderV04 loads datatimeV04.
-        \item loaderV04 calls datatimeV04 as a subroutine, displaying date and time.
-        \item loaderV04 returns to MBR.
-        \item MBR loads stringV04.asm into memory 0001:7890.
-        \item MBR displays the contents of stringV04.asm using BIOS function group 0x10, function 0x13.
-        \item MBR waits for a keyboard press.
-        \item MBR clears the screen by VRAM.
-        \item Then a command prompt `\$' at the top left corner followed by a blinking cursor.
-    \end{itemize}
-
-    This fulfills the requirements of the assignment.
+    This code is otherwise identical.
 
 
     \section{Screenshots}\label{sec:screenshots}
@@ -143,7 +117,7 @@
             push MAIN_OFF
 
             call 0x:load_sector
-            mov ah, 0x06
+            mov ah, CLEAR_FUN
             int CUSTOM_VIDEO
 
             call MAIN_SEG:MAIN_OFF
@@ -156,22 +130,13 @@
             push 0x7890
             call 0x:load_sector
 
-            push ds
-            mov ax, 0x0001
-            mov ds, ax
-            push MAGENTA_BLACK
-            push 37
-            push 0x7890
-            push 12
-            push 22
-            call 0x:print
-            pop ds
+            PRINT MAGENTA_BLACK, 37, 0x0001, 0x7890, 12, 22
 
             ; Wait for key press
             mov ah, 0x00
             int 0x16
 
-            mov ah, 0x06
+            mov ah, CLEAR_FUN
             int CUSTOM_VIDEO
 
             push MAGENTA_BLACK
@@ -190,11 +155,11 @@
             push es
 
             xor ax, ax
-            mov es, ax                                          ; es = 0x0000, IVT segment
-            cli                                                 ; disable interrupts during change
-            mov word [es:CUSTOM_VIDEO * 4], function_group      ; IP for int 0xf0 → point to `function_group`
-            mov   word [es:CUSTOM_VIDEO * 4 +2 ], cs            ; CS for int 0xf0 → current segment
-            sti                                                 ; re-enable interrupts
+            mov es, ax                                           ; es = 0x0000, IVT segment
+            cli                                                  ; disable interrupts during change
+            mov word [es:CUSTOM_VIDEO * 4], function_group       ; IP for int 0xf0 → point to `function_group`
+            mov   word [es:CUSTOM_VIDEO * 4 + 2 ], cs            ; CS for int 0xf0 → current segment
+            sti                                                  ; re-enable interrupts
 
             pop es
             pop ax
@@ -230,20 +195,20 @@
             mov  ah, 13h            ; BIOS display string (function 13h)
             mov  al, 0              ; Write mode = 1 (cursor stays after last char
             mov  bh, 0              ; Video page
-            int BIOS_VIDEO
+            int CUSTOM_VIDEO
 
             pop bp
             retf 10
 
         function_group:
-          cmp ah, 13h
-          je disp
-          cmp ah, 06h
-          je clear_screen
-          jmp end
+          cmp ah, DISPLAY_FUN
+          je .disp
+          cmp ah, CLEAR_FUN
+          je .clear_screen
+          jmp .end
 
         ; -----------------------------------------------------------------------------
-        ; Function: disp
+        ; IRQ Function: disp
         ; Description: Prints a string to the console.
         ;    bl         ; Attribute (lightgreen on black)
         ;    cx         ; length of the string
@@ -251,7 +216,7 @@
         ;    dh         ; row position
         ;    dl         ; column position
         ; -----------------------------------------------------------------------------
-        disp:
+        .disp:
             ; save non-volatile registers
             push ds
             push bx
@@ -294,8 +259,9 @@
             pop si
             pop bx
             pop ds
-            jmp end
-        clear_screen:
+            jmp .end
+
+        .clear_screen:
             mov ax, 0xB800      ; Memory-mapped region for text
             mov es, ax
             xor di, di          ; ES:DI = 0xB800:0 (start offset is 0)
@@ -303,7 +269,7 @@
             mov al, 0x20        ; ASCII space
             mov cx, 2000        ; 80x25 = 2000 characters
             rep stosw           ; Fill screen with spaces and attributes
-        end:
+        .end:
             iret
 
         times 0x120 - ($ - $$) db 0
