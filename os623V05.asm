@@ -53,7 +53,7 @@ start:
     push MAIN_OFF
 
     call 0x:load_sector
-    mov ah, 0x06
+    mov ah, CLEAR_FUN
     int CUSTOM_VIDEO
 
     call MAIN_SEG:MAIN_OFF
@@ -72,7 +72,7 @@ start:
     mov ah, 0x00
     int 0x16
 
-    mov ah, 0x06
+    mov ah, CLEAR_FUN
     int CUSTOM_VIDEO
 
     push MAGENTA_BLACK
@@ -138,9 +138,9 @@ print:
 
 function_group:
   cmp ah, DISPLAY_FUN
-  je _disp
+  je .disp
   cmp ah, CLEAR_FUN
-  je _clear_screen
+  je .clear_screen
   jmp .end
 
 ; -----------------------------------------------------------------------------
@@ -152,7 +152,7 @@ function_group:
 ;    dh         ; row position
 ;    dl         ; column position
 ; -----------------------------------------------------------------------------
-_disp:
+.disp:
     ; save non-volatile registers
     push ds
     push bx
@@ -197,7 +197,7 @@ _disp:
     pop ds
     jmp .end
 
-_clear_screen:
+.clear_screen:
     mov ax, 0xB800      ; Memory-mapped region for text
     mov es, ax
     xor di, di          ; ES:DI = 0xB800:0 (start offset is 0)
