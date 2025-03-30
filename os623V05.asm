@@ -20,6 +20,8 @@ STRING_OFF equ 0x7890
 MAGENTA_BLACK equ 0x0D
 YELLOW_BLACK        equ 0x0E
 
+VGA_DISPLAY_WIDTH   equ 320
+VGA_DISPLAY_HEIGHT  equ 200
 
 ; 1) attribute
 ; 2) length of string
@@ -205,13 +207,12 @@ function_group:
     jmp .end
 
 .clear_screen:
-    mov ax, 0xB800      ; Memory-mapped region for text
+    mov ax, 0xA000      ; Memory-mapped region for VGA graphics
     mov es, ax
-    xor di, di          ; ES:DI = 0xB800:0 (start offset is 0)
-    mov ah, 0x07        ; white on black
-    mov al, 0x20        ; ASCII space
-    mov cx, 2000        ; 80x25 = 2000 characters
-    rep stosw           ; Fill screen with spaces and attributes
+    xor di, di          ; ES:DI = 0xA000:0 (start offset is 0)
+    mov al, 0x0         ; empty pixel
+    mov cx, VGA_DISPLAY_WIDTH * VGA_DISPLAY_HEIGHT
+    rep stosb           ; Clear screen
 .end:
     iret
 
