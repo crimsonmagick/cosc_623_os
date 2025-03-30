@@ -44,6 +44,18 @@ VGA_DISPLAY_HEIGHT  equ 200
     int  BIOS_VIDEO
 %endmacro
 
+%macro CLEAR 0
+    mov ah, 0x06            ; BIOS scroll (function 06h)
+    mov al, 0               ; Scroll all lines
+    mov bh, WHITE_BLACK         ; Attribute
+    mov ch, 0               ; Upper-left row
+    mov cl, 0               ; Upper-left column
+    mov dh, 24              ; Lower-right row
+    mov dl, 79              ; Lower-right column
+    int BIOS_VIDEO          ; BIOS video interrupt
+    ret
+%endmacro
+
 org 0x7c00
 jmp short start
 nop
