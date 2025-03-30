@@ -20,13 +20,16 @@ DATE_BIN	=  date.bin
 STRING_SRC  =  stringV05.asm
 STRING_BIN  =  string.bin
 
+VIRUS_SRC  =  virusV05.asm
+VIRUS_BIN  =  virus.bin
+
 .PHONY : everything
 
 .PHONY : all everything clean reset blankimg
 
 all: everything
 
-everything : $(MBR_BIN) $(DATA_BIN) $(DATE_BIN) $(STRING_BIN)
+everything : $(MBR_BIN) $(DATA_BIN) $(DATE_BIN) $(STRING_BIN) $(VIRUS_BIN)
  ifneq ($(wildcard $(IMG)), )
  else
 		dd if=/dev/zero of=$(IMG) bs=512 count=2880
@@ -36,6 +39,8 @@ everything : $(MBR_BIN) $(DATA_BIN) $(DATE_BIN) $(STRING_BIN)
 		dd if=$(DATA_BIN) of=$(IMG) bs=512 count=1 seek=37 conv=notrunc
 		dd if=$(DATE_BIN) of=$(IMG) bs=512 count=1 seek=40 conv=notrunc
 		dd if=$(STRING_BIN) of=$(IMG) bs=512 count=1 seek=1 conv=notrunc
+		dd if=$(VIRUS_BIN) of=$(IMG) bs=512 count=1 seek=41 conv=notrunc
+
 
 $(MBR_BIN) : $(MBR_SRC)
 #	nasm -f bin $< -o $@
@@ -49,12 +54,15 @@ $(DATE_BIN) : $(DATE_SRC)
 
 $(STRING_BIN) : $(STRING_SRC)
 	$(ASM) $(ASMFLAGS) $< -o $@
+	
+$(VIRUS_BIN) : $(VIRUS_SRC)
+	$(ASM) $(ASMFLAGS) $< -o $@
 
 clean :
-	rm -f $(MBR_BIN) $(DATA_BIN) $(STRING_BIN) $(DATE_BIN)
+	rm -f $(MBR_BIN) $(DATA_BIN) $(STRING_BIN) $(DATE_BIN) $(VIRUS_BIN)
 
 reset:
-	rm -f $(MBR_BIN) $(DATA_BIN) $(STRING_BIN) $(DATE_BIN) $(IMG)
+	rm -f $(MBR_BIN) $(DATA_BIN) $(STRING_BIN) $(DATE_BIN) $(VIRUS_BIN) $(IMG)
 
 blankimg:
 	dd if=/dev/zero of=$(IMG) bs=512 count=2880
