@@ -4,6 +4,9 @@ CUSTOM_VIDEO        equ 0xf0
 DISPLAY_FUN         equ 0x13
 CLEAR_FUN           equ 0x06
 
+FUN_VIDEO_MODE      equ 0x0000
+VGA_MODE            equ 0x0013
+
 BIOS_FLOPPY         equ 0x0013
 READ_SECTORS        equ 0x0002
 
@@ -44,6 +47,8 @@ nop
 bsOEM       db "WelbOS v05"         ; OEM String
 
 start:
+    mov ax, FUN_VIDEO_MODE + VGA_MODE
+    int BIOS_VIDEO
     call set_ivt
     ; Inputs: cylinder, sector, head, segment, offset.
     push 1
@@ -66,7 +71,7 @@ start:
     push 0x7890
     call 0x:load_sector
 
-    PRINT MAGENTA_BLACK, 37, 0x0001, 0x7890, 12, 22
+    PRINT MAGENTA_BLACK, 37, 0x0001, 0x7890, 12, 2
 
     ; Wait for key press
     mov ah, 0x00
@@ -84,7 +89,7 @@ start:
 
     call set_cursor_pos
 
-    int 20h
+    jmp $
 
 set_ivt:
     push ax
@@ -131,7 +136,7 @@ print:
     mov  ah, 13h            ; BIOS display string (function 13h)
     mov  al, 0              ; Write mode = 1 (cursor stays after last char
     mov  bh, 0              ; Video page
-    int CUSTOM_VIDEO
+    int BIOS_VIDEO
 
     pop bp
     retf 10
