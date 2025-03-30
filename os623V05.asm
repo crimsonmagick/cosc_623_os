@@ -18,6 +18,8 @@ STRING_SEG equ 0x0001
 STRING_OFF equ 0x7890
 
 MAGENTA_BLACK equ 0x0D
+YELLOW_BLACK        equ 0x0E
+
 
 ; 1) attribute
 ; 2) length of string
@@ -71,7 +73,7 @@ start:
     push 0x7890
     call 0x:load_sector
 
-    PRINT MAGENTA_BLACK, 37, 0x0001, 0x7890, 12, 2
+    PRINT YELLOW_BLACK, 37, 0x0001, 0x7890, 19, 2
 
     ; Wait for key press
     mov ah, 0x00

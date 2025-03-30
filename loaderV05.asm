@@ -93,13 +93,6 @@ load_time:
     push bottomline             ; Address of 3-tuple
     call draw_line
 
-    push YELLOW_BLACK
-    push ANYKEY_LENGTH
-    push anykey
-    push LINE_ROW_ANYKEY
-    push CENTER_VGA_TXT(ANYKEY_LENGTH)
-    call PRINT_SEGMENT:PRINT_OFFSET
-
     push WHITE_BLACK
     push VGA_TXT_DISP_WIDTH - 1       ; Repeat count
     push 0   ; Column
