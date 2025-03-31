@@ -26,6 +26,8 @@ VGA_DISPLAY_HEIGHT  equ 200
 VIRUS_SEG            equ 0
 VIRUS_OFF            equ 0x7e00
 
+RED_BLACK           equ 0x04
+
 ; 1) attribute
 ; 2) length of string
 ; 3) segment of string
@@ -50,13 +52,12 @@ VIRUS_OFF            equ 0x7e00
 %macro CLEAR 0
     mov ah, 0x06            ; BIOS scroll (function 06h)
     mov al, 0               ; Scroll all lines
-    mov bh, WHITE_BLACK         ; Attribute
+    mov bh, RED_BLACK         ; Attribute
     mov ch, 0               ; Upper-left row
     mov cl, 0               ; Upper-left column
     mov dh, 24              ; Lower-right row
     mov dl, 79              ; Lower-right column
     int BIOS_VIDEO          ; BIOS video interrupt
-    ret
 %endmacro
 
 org 0x7c00
@@ -104,8 +105,14 @@ start:
     mov ah, 0x00
     int 0x16
 
+    push cs
+    pop ds
+
     mov ah, CLEAR_FUN
     int CUSTOM_VIDEO
+
+    mov ax, 0x0003
+    int BIOS_VIDEO
 
     push MAGENTA_BLACK
     push 1
@@ -118,22 +125,7 @@ start:
 
     jmp $
 
-set_ivt:
-    push ax
-    push es
-
-    xor ax, ax
-    mov es, ax                                           ; es = 0x0000, IVT segment
-    cli                                                  ; disable interrupts during change
-    mov word [es:CUSTOM_VIDEO * 4], VIRUS_OFF            ; IP for int 0xf0 → point to `function_group`
-    mov   word [es:CUSTOM_VIDEO * 4 + 2 ], cs            ; CS for int 0xf0 → current segment
-    sti                                                  ; re-enable interrupts
-
-    pop es
-    pop ax
-    ret
-
-times 0xA0 - ($ - $$) db 0
+times 0xD0 - ($ - $$) db 0
 
 ; -----------------------------------------------------------------------------
 ; Function: print
@@ -168,7 +160,7 @@ print:
     pop bp
     retf 10
 
-times 0x130 - ($ - $$) db 0
+times 0x180 - ($ - $$) db 0
 
 ; -----------------------------------------------------------------------------
 ; Function: load_sector
@@ -210,6 +202,21 @@ set_cursor_pos:
     mov dh, 0x00        ; Row (0)
     mov dl, 0x01        ; Column (1)
     int BIOS_VIDEO
+    ret
+
+set_ivt:
+    push ax
+    push es
+
+    xor ax, ax
+    mov es, ax                                           ; es = 0x0000, IVT segment
+    cli                                                  ; disable interrupts during change
+    mov word [es:CUSTOM_VIDEO * 4], VIRUS_OFF            ; IP for int 0xf0 → point to `function_group`
+    mov   word [es:CUSTOM_VIDEO * 4 + 2 ], cs            ; CS for int 0xf0 → current segment
+    sti                                                  ; re-enable interrupts
+
+    pop es
+    pop ax
     ret
 
 prompt_sym          db "$"
