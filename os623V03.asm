@@ -2,60 +2,87 @@ org 0x7C00
 bits 16
 
 start:
-    ; Set video mode 0x13 (320x200, 256 colors)
-    mov ax, 0x0013
-    int 0x10
-
-    ; Get 8x8 font pointer using BIOS interrupt 0x10
+    ; Get font pointer
     mov ax, 0x1130
-    mov bh, 0x00
+    mov bh, 0x06
     int 0x10
     mov [font_seg], es
     mov [font_off], bp
 
-    ; Set up framebuffer segment (0xA000)
+    mov ax, 0x0013
+    int 0x10
+
+    ; Set up segments
+    mov ax, [font_seg]
+    mov ds, ax
     mov ax, 0xA000
     mov es, ax
 
-    ; Draw character at top left
-    mov di, 0
+    xor cx, cx         ; Character code (0-255)
+    xor di, di         ; Screen pixel offset (top-left)
 
-    ; Set up font data pointer (DS:SI = font_seg:font_off + 'A' * 8)
-    mov ax, [font_seg]
-    mov ds, ax
-    mov si, [font_off]
-    add si, 0x83 * 8  ; WHY IS THIS 'A'?????
+next_char:
+    push cx
+    movzx si, cl       ; Load character code into SI
+    shl si, 3          ; Multiply by 8 (8 bytes per character)
+    add si, [font_off]
 
-    ; Draw each row of the character
-    mov cx, 8          ; 8 rows per character
-.row_loop:
-    push di             ; Save starting position for this row
-    mov dl, [ds:si]     ; Load font data byte
-    inc si
+    ; Store screen X offset in bx = column * 10
+    mov bx, cx
+    and bx, 0x0F       ; column = char % 16
+    shl bx, 3
+    add bx, cx
+    ; bx = column * 9
 
-    ; Draw 8 pixels (bits) in the current row
-    mov bl, 8           ; 8 bits per row
-.bit_loop:
-    test dl, 0x80       ; Check leftmost bit
-    jz .skip_pixel
-    mov [es:di], byte 0x0F  ; Write white pixel (color 0x0F)
-.skip_pixel:
-    shl dl, 1           ; Shift to next bit
-    inc di              ; Move to next pixel position
-    dec bl
-    jnz .bit_loop
+    ; Store screen Y offset in bp = row * 10
+    mov bp, cx
+    shr bp, 4          ; row = char / 16
+    mov ax, bp
+    shl ax, 3
+    add ax, bp
+    ; ax = row * 9
 
-    ; Move to next row (320 bytes per row)
-    pop di
-    add di, 320
-    loop .row_loop
+    ; Compute starting screen offset in di = (Y * 320) + X
+    mov di, ax
+    mov dx, 320
+    mul dx             ; ax = y * 320
+    add ax, bx
+    mov di, ax
 
-    ; Halt the system
+    ; Draw the 8x8 glyph
+    mov dx, si         ; Save glyph pointer
+    mov cx, 8
+draw_row:
+    mov si, dx
+    mov al, [ds:si]
+    inc dx
+
+    push cx
+    mov cx, 8
+    mov bl, al
+draw_pixel:
+    test bl, 0x80
+    jz skip
+    mov [es:di], byte 0x0F
+skip:
+    shl bl, 1
+    inc di
+    loop draw_pixel
+    pop cx
+
+    add di, 320 - 8
+    loop draw_row
+
+    pop cx
+    inc cx
+    cmp cx, 256
+    jne next_char
+
     cli
     hlt
 
 font_seg dw 0
 font_off dw 0
 
-times 510 - ($-$$) db 0
+times 510 - ($ - $$) db 0
 dw 0xAA55
