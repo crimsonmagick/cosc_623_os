@@ -27,6 +27,8 @@ VIRUS_SEG            equ 0
 VIRUS_OFF            equ 0x7e00
 
 RED_BLACK           equ 0x04
+FONT_BUFFER         equ 0x9000
+
 
 ; 1) attribute
 ; 2) length of string
@@ -64,11 +66,11 @@ org 0x7c00
 jmp short start
 nop
 
-bsOEM       db "WelbOS v05"         ; OEM String
+bsOEM       db "WelbOS v06"         ; OEM String
 
 start:
-    mov ax, FUN_VIDEO_MODE + VGA_MODE
-    int BIOS_VIDEO
+
+    call configure_video
 
     push 1
     push 6
@@ -218,6 +220,38 @@ set_ivt:
     pop es
     pop ax
     ret
+
+configure_video:
+    ; set text mode to get font
+    mov ax, 0x0003
+    int BIOS_VIDEO
+;
+    ; get font pointer
+    mov ax, 0x1130
+    mov bh, 0x03
+    int BIOS_VIDEO
+
+    ; move into a font buffer
+    ; source font
+    push es
+    pop ds
+    mov si, bp
+    ; destination buffer
+    mov ax, 0
+    mov es, ax
+    mov di, FONT_BUFFER
+    mov cx, 256 * 8
+    cld
+    rep movsb
+
+    ; reset ds (set to 0 stored in ax)
+    mov ds, ax
+
+    mov ax, FUN_VIDEO_MODE + VGA_MODE
+    int BIOS_VIDEO
+    ret
+
+
 
 prompt_sym          db "$"
 

@@ -5,8 +5,8 @@
 VER			= V05
 ASM			= nasm
 ASMFLAGS		= -f bin
-IMG			= /dev/sda
-#IMG			= a.img
+#IMG			= /dev/sda
+IMG			= a.img
 
 MBR			=  os623V.asm
 MBR_SRC		= $(subst V,$(VER),$(MBR))

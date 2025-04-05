@@ -44,8 +44,8 @@ function_group:
     xor ax, ax
 
     mov al, dh           ; Load row
-    mov bx, 80           ; 80 columns per row
-    mul bx               ; AX = row * 80
+    mov bx, 40           ; 40 columns per row
+    mul bx               ; AX = row * 40
 
     pop dx
     xor dh, dh
