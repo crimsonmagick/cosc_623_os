@@ -18,61 +18,78 @@ function_group:
   jmp .end
 
 ; -----------------------------------------------------------------------------
-; IRQ Function: disp - Custom VGA graphics print function.
-;                      Prints a string using a font located in FONT_OFFSET
-; Description: Prints a string to the console.
-;    bl         ; Attribute
-;    cx         ; length of the string
-;    es:bp      ; address of string
-;    dh         ; row position
-;    dl         ; column position
+; Function: disp - Print string using font at FONT_OFFSET
+; Parameters:
+;    bl         ; Foreground color
+;    cx         ; String length
+;    es:bp      ; String address
+;    dh         ; Row (character position)
+;    dl         ; Column (character position)
 ; -----------------------------------------------------------------------------
 .disp:
-    ; save non-volatile registers
     push ds
     push bx
     push si
     push di
 
+    ; Set font and VGA segments
     mov ax, FONT_SEGMENT
     mov fs, ax
     mov ax, VGA_SEGMENT
-    mov ds, ax      ; ds = destination segment (VGA)
+    mov ds, ax
 
-    mov ax, dx
-    shr ax, 8       ; ax = row position
-    imul ax, ax, VGA_DISPLAY_WIDTH * 8   ; ax = row pixel offset
-    xor dh, dh  ; dx = columns
-    shl dx, 3   ; dx = columns * 8 pixels = column offset
-    add ax, dx  ; ax = total pixel offset
-    mov di, ax  ; di = total pixel offset
-    xor ax, ax
+    ; Calculate initial pixel offset (di)
+    movzx ax, dh                  ; row
+    imul ax, VGA_DISPLAY_WIDTH * 8 ; row * 320*8
+    movzx dx, dl                  ; column
+    shl dx, 3                     ; column *8
+    add ax, dx
+    mov di, ax                    ; di = starting offset
 
-    push di
+    mov bx, di                    ; Save base position in bx
+    mov si, bp                    ; es:si = string address
+
+.draw_char_loop:
+    jcxz .end_draw                ; Exit when cx=0
+
+    ; Load character and get font data
+    mov al, [es:si]
+    inc si
+    movzx di, al
+    shl di, 3
+    add di, FONT_OFFSET           ; fs:di = font data
+
+    ; Draw 8 rows
     push cx
-.draw_char:
-    mov cx, 8       ; row counter
-    mov al, [es:bp] ; al = ascii value / font table offset
-    movzx si, al    ; si = ascii value / font table offset
-    shl si, 3       ; si *= 8 -> si = pixel offset
-    add si, FONT_OFFSET ; si = linear memory offset for ascii character
+    mov cx, 8
 .draw_row:
-    mov al, [fs:si] ; row/byte from font glyph
-    mov [ds:di], al ; write to video memory
-    dec cx
-    jz .next_char
-    add di, VGA_DISPLAY_WIDTH   ; di = next row of pixels
-    jmp .draw_row
-.next_char:
+    push cx
+    mov al, [fs:di]               ; Font byte for current row
+    inc di
+
+    ; Draw 8 bits (pixels)
+    mov cx, 8
+    mov ah, al                    ; Copy font byte to ah
+.draw_bit:
+    shl ah, 1                     ; Draw highest bit
+    mov al, 0                     ; Default background (black)
+    jnc .skip_foreground          ; Test highest big (don't draw if 0)
+    mov al, bl                    ; we're using bx for the loop, so let's add a random vlaue for the "virus"
+.skip_foreground:
+    mov [ds:bx], al
+    inc bx                        ; Next pixel column
+    loop .draw_bit
+
+    ; Move to next row (bx += 320 - 8)
+    add bx, VGA_DISPLAY_WIDTH - 8
+    pop cx
+    loop .draw_row
+
+    ; Restore bx to next character's base (current bx is at start + 320*8)
+    sub bx, (VGA_DISPLAY_WIDTH *8) -8
     pop cx
     dec cx
-    jz .end_draw
-    inc bp   ; move on to the next ascii source character
-    pop di
-    add di, 8   ; next column/8 pixel offset
-    push di     ; store base pixel offset for next char
-    push cx     ; store character remaining counter for next char
-    jmp .draw_char
+    jmp .draw_char_loop
 
 .end_draw:
     pop di
@@ -82,11 +99,11 @@ function_group:
     jmp .end
 
 .clear_screen:
-    mov ax, 0xA000      ; Memory-mapped region for VGA graphics
+    mov ax, 0xA000
     mov es, ax
-    xor di, di          ; ES:DI = 0xA000:0 (start offset is 0)
-    mov al, 0x0         ; empty pixel
-    mov cx, VGA_DISPLAY_WIDTH * VGA_DISPLAY_HEIGHT
-    rep stosb           ; Clear screen
+    xor di, di
+    xor ax, ax
+    mov cx, VGA_DISPLAY_WIDTH * VGA_DISPLAY_HEIGHT / 2
+    rep stosw
 .end:
     iret

