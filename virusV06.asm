@@ -40,18 +40,18 @@ function_group:
     mov ds, ax
 
     ; Calculate initial pixel offset (di)
-    movzx ax, dh                  ; row
-    imul ax, VGA_DISPLAY_WIDTH * FONT_SIZE ; row * 320*FONT_SIZE
-    movzx dx, dl                  ; column
-    shl dx, 3                     ; column * 8 (FONT_SIZE)
+    movzx ax, dh                            ; row
+    imul ax, VGA_DISPLAY_WIDTH * FONT_SIZE  ; row * 320*FONT_SIZE
+    movzx dx, dl                            ; column
+    shl dx, 3                               ; column * 8 (FONT_SIZE)
     add ax, dx
-    mov di, ax                    ; di = starting offset
+    mov di, ax                              ; di = starting offset
 
-    mov bx, di                    ; Save base position in bx
-    mov si, bp                    ; es:si = string address
+    mov bx, di                              ; Save base position in bx
+    mov si, bp                              ; es:si = string address
 
 .draw_char_loop:
-    jcxz .end_draw                ; Exit when cx=0
+    jcxz .end_draw                ; end when cx=0
 
     ; Load character and get font data
     mov al, [es:si]
@@ -65,15 +65,15 @@ function_group:
     mov cx, FONT_SIZE
 .draw_row:
     push cx
-    mov al, [fs:di]               ; Font byte for current row
+    mov al, [fs:di]               ; font byte for current row
     inc di
 
     ; Draw 8 bits (pixels)
     mov cx, FONT_SIZE
-    mov ah, al                    ; Copy font byte to ah
+    mov ah, al                    ; copy font byte to ah
 .draw_bit:
-    shl ah, 1                     ; Draw highest bit
-    mov al, 0                     ; Default background (black)
+    shl ah, 1                     ; draw highest bit
+    mov al, 0                     ; default background (black)
     jnc .skip_foreground          ; Test highest big (don't draw if 0)
     mov al, bl                    ; we're using bx for the loop, so let's use this as a random value for the "virus"
 .skip_foreground:

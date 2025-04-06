@@ -36,7 +36,7 @@ FONT_BUFFER         equ 0x9000
 ; 5) row position
 ; 6) column position
 %macro PRINT 6
-    mov bl, %1         ; Attribute (lightgreen on black)
+    mov bl, %1         ; Attribute
     mov cx, %2         ; length of the string
     mov ax, %3         ; segment of the string
     mov es, ax
@@ -48,17 +48,6 @@ FONT_BUFFER         equ 0x9000
     mov  al, 0              ; Write mode = 1 (cursor stays after last char
     mov  bh, 0              ; Video page
     int  BIOS_VIDEO
-%endmacro
-
-%macro CLEAR 0
-    mov ah, 0x06            ; BIOS scroll (function 06h)
-    mov al, 0               ; Scroll all lines
-    mov bh, RED_BLACK         ; Attribute
-    mov ch, 0               ; Upper-left row
-    mov cl, 0               ; Upper-left column
-    mov dh, 24              ; Lower-right row
-    mov dl, 79              ; Lower-right column
-    int BIOS_VIDEO          ; BIOS video interrupt
 %endmacro
 
 org 0x7c00
@@ -221,7 +210,7 @@ configure_video:
     ; set text mode to get font
     mov ax, 0x0003
     int BIOS_VIDEO
-;
+
     ; get font pointer
     mov ax, 0x1130
     mov bh, 0x03
