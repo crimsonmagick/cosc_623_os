@@ -87,8 +87,6 @@ start:
     push MAIN_OFF
 
     call 0x:load_sector
-    mov ah, CLEAR_FUN
-    int BIOS_VIDEO
 
     call MAIN_SEG:MAIN_OFF
 

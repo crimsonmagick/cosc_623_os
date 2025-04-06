@@ -5,6 +5,7 @@ VGA_DISPLAY_WIDTH   equ 320
 VGA_DISPLAY_HEIGHT  equ 200
 FONT_OFFSET         equ 0x9000
 FONT_SEGMENT        equ 0x0
+FONT_SIZE           equ 8
 VGA_SEGMENT         equ 0xA000
 
 bits 16
@@ -40,9 +41,9 @@ function_group:
 
     ; Calculate initial pixel offset (di)
     movzx ax, dh                  ; row
-    imul ax, VGA_DISPLAY_WIDTH * 8 ; row * 320*8
+    imul ax, VGA_DISPLAY_WIDTH * FONT_SIZE ; row * 320*FONT_SIZE
     movzx dx, dl                  ; column
-    shl dx, 3                     ; column *8
+    shl dx, 3                     ; column * 8 (FONT_SIZE)
     add ax, dx
     mov di, ax                    ; di = starting offset
 
@@ -61,32 +62,32 @@ function_group:
 
     ; Draw 8 rows
     push cx
-    mov cx, 8
+    mov cx, FONT_SIZE
 .draw_row:
     push cx
     mov al, [fs:di]               ; Font byte for current row
     inc di
 
     ; Draw 8 bits (pixels)
-    mov cx, 8
+    mov cx, FONT_SIZE
     mov ah, al                    ; Copy font byte to ah
 .draw_bit:
     shl ah, 1                     ; Draw highest bit
     mov al, 0                     ; Default background (black)
     jnc .skip_foreground          ; Test highest big (don't draw if 0)
-    mov al, bl                    ; we're using bx for the loop, so let's add a random vlaue for the "virus"
+    mov al, bl                    ; we're using bx for the loop, so let's use this as a random value for the "virus"
 .skip_foreground:
     mov [ds:bx], al
     inc bx                        ; Next pixel column
     loop .draw_bit
 
     ; Move to next row (bx += 320 - 8)
-    add bx, VGA_DISPLAY_WIDTH - 8
+    add bx, VGA_DISPLAY_WIDTH - FONT_SIZE
     pop cx
     loop .draw_row
 
     ; Restore bx to next character's base (current bx is at start + 320*8)
-    sub bx, (VGA_DISPLAY_WIDTH *8) -8
+    sub bx, (VGA_DISPLAY_WIDTH * FONT_SIZE) - FONT_SIZE
     pop cx
     dec cx
     jmp .draw_char_loop
@@ -99,11 +100,16 @@ function_group:
     jmp .end
 
 .clear_screen:
-    mov ax, 0xA000
+    mov ax, VGA_SEGMENT
     mov es, ax
     xor di, di
-    xor ax, ax
-    mov cx, VGA_DISPLAY_WIDTH * VGA_DISPLAY_HEIGHT / 2
-    rep stosw
+    mov dx, VGA_DISPLAY_HEIGHT
+    mov al, 0x0 ; we'll iterate through our colors
+.clear_row:
+    mov cx, VGA_DISPLAY_WIDTH
+    rep stosb
+    inc al
+    dec dx
+    jne .clear_row
 .end:
     iret
