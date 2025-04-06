@@ -70,22 +70,21 @@ bsOEM       db "WelbOS v06"         ; OEM String
 start:
 
     call configure_video
+    call set_ivt
 
+    ; Inputs: cylinder, sector, head, segment, offset.
     push 1
     push 6
     push 0
     push VIRUS_SEG
     push VIRUS_OFF
     call 0x:load_sector
-
-    call set_ivt
     ; Inputs: cylinder, sector, head, segment, offset.
     push 1
     push 2
     push 0
     push MAIN_SEG
     push MAIN_OFF
-
     call 0x:load_sector
 
     call MAIN_SEG:MAIN_OFF
@@ -247,8 +246,6 @@ configure_video:
     mov ax, FUN_VIDEO_MODE + VGA_MODE
     int BIOS_VIDEO
     ret
-
-
 
 prompt_sym          db "$"
 
