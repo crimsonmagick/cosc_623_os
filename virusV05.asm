@@ -3,8 +3,11 @@ CLEAR_FUN           equ 0x06
 
 VGA_DISPLAY_WIDTH   equ 320
 VGA_DISPLAY_HEIGHT  equ 200
+FONT_OFFSET         equ 0x9000
+FONT_SEGMENT        equ 0x0
+VGA_SEGMENT         equ 0xA000
 
-bit16
+bits 16
 org 0x7e00
 
 function_group:
@@ -15,9 +18,10 @@ function_group:
   jmp .end
 
 ; -----------------------------------------------------------------------------
-; IRQ Function: disp
+; IRQ Function: disp - Custom VGA graphics print function.
+;                      Prints a string using a font located in FONT_OFFSET
 ; Description: Prints a string to the console.
-;    bl         ; Attribute (lightgreen on black)
+;    bl         ; Attribute
 ;    cx         ; length of the string
 ;    es:bp      ; address of string
 ;    dh         ; row position
@@ -30,38 +34,47 @@ function_group:
     push si
     push di
 
-    push bx
-    push dx
+    mov ax, FONT_SEGMENT
+    mov fs, ax
+    mov ax, VGA_SEGMENT
+    mov ds, ax      ; ds = destination segment (VGA)
 
-    push es
-    pop ds
-    push bp
-    pop si
-
-    mov ax, 0xB800
-    mov es, ax
-
+    mov ax, dx
+    shr ax, 8       ; ax = row position
+    imul ax, ax, VGA_DISPLAY_WIDTH * 8   ; ax = row pixel offset
+    xor dh, dh  ; dx = columns
+    shl dx, 3   ; dx = columns * 8 pixels = column offset
+    add ax, dx  ; ax = total pixel offset
+    mov di, ax  ; di = total pixel offset
     xor ax, ax
 
-    mov al, dh           ; Load row
-    mov bx, 40           ; 40 columns per row
-    mul bx               ; AX = row * 40
+    push di
+    push cx
+.draw_char:
+    mov cx, 8       ; row counter
+    mov al, [es:bp] ; al = ascii value / font table offset
+    movzx si, al    ; si = ascii value / font table offset
+    shl si, 3       ; si *= 8 -> si = pixel offset
+    add si, FONT_OFFSET ; si = linear memory offset for ascii character
+.draw_row:
+    mov al, [fs:si] ; row/byte from font glyph
+    mov [ds:di], al ; write to video memory
+    dec cx
+    jz .next_char
+    add di, VGA_DISPLAY_WIDTH   ; di = next row of pixels
+    jmp .draw_row
+.next_char:
+    pop cx
+    dec cx
+    jz .end_draw
+    inc bp   ; move on to the next ascii source character
+    pop di
+    add di, 8   ; next column/8 pixel offset
+    push di     ; store base pixel offset for next char
+    push cx     ; store character remaining counter for next char
+    jmp .draw_char
 
-    pop dx
-    xor dh, dh
-    add ax, dx           ; AX = (row * 80) + column
-    shl ax, 1            ; Multiply by 2 (each char = 2 bytes)
-    mov di, ax           ; ES:DI now points to VGA memory location
-
-    ; Set up string parameters
-    pop bx
-    mov ah, bl      ; Attribute byte (foreground/background)
-
-.write_loop:
-    lodsb                ; Load next character from DS:SI into AL
-    stosw                ; Store AX (char + attribute) at ES:DI
-    loop .write_loop
-
+.end_draw:
     pop di
     pop si
     pop bx
